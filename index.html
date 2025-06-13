@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador de Trafico </title>
+
+     <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+  <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        body { margin: 0; padding: 0; }
+        #container {
+            display: grid;
+            grid-template-columns: 70% 30%;
+            height: 100vh;
+        }
+        #map { height: 70vh; }
+        #dashboard {
+            padding: 15px;
+            background: #f5f5f5;
+            border-left: 1px solid #ddd;
+        }
+        #command-panel {
+            margin-top: 20px;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <div id="map"></div>
+        <div id="dashboard">
+            <h2>Dashboard de Simulacion</h2>
+
+            <div class="stats">
+            <div>Vehiculos: <span id="vehicle-count">0</span>  </div>
+            <div>Peatonos: <span id="vehicle-count">0</span>  </div>
+            <div>Semaforos: <span id="vehicle-count">0</span>  </div>
+            </div>
+
+            <div class="chart-container">
+                <canvas id="traffic-chart"></canvas>
+            </div>
+
+            <div id="command-panel">    
+                <h3>Comandos NLP</h3>
+                <input type="text" id="command-input" placeholder="Escribe un comando...">
+                <button id="send-command">Enviar</button>
+                <div id="command-history"></div>
+            </div>
+        </div>
+    </div>
+
+     <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- Socket.io -->
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <!-- Nuestro JS -->
+    <script src="app.js"></script>
+</body>
+</html>
