@@ -29,18 +29,23 @@ class Simulacion:
         if not self.running:
             traci.start(sumo_cmd)
             self.running = True
-            print("Simulacion iniciada")
+            print("Simulación iniciada")
 
-            for _ in range(pasos):
-                if traci.simulation.getMinExpectedNumber() == 0:
-                    print("No quedan vehículos.")
-                    break
-                traci.simulationStep()
-                self.step += 1
-                print(f"Paso {self.step} ejecutado.")
-                time.sleep(delay)
+            try:
+                for _ in range(pasos):
+                    if traci.simulation.getMinExpectedNumber() == 0:
+                        print("No quedan vehículos.")
+                        break
+                    traci.simulationStep()
+                    self.step += 1
+                    print(f"Paso {self.step} ejecutado.")
+                    time.sleep(delay)
+            except KeyboardInterrupt:
+                print("\nSimulación interrumpida por el usuario con Ctrl+C.")
+                print("_____________________________________________________")
+            finally:
+                self.mostrar_menu()
 
-            self.stop()
 
     #Funcion que detiene la simulacion
     def stop(self):
@@ -54,18 +59,28 @@ class Simulacion:
         if self.running:
             traci.close()
         self.step = 0 #Reiniciar el contador
-        self.start()
+        self.start(pasos, delay)
         print("Simulacion reiniciada")
 
     #Funcion que muestra el estado de trafico(vehiculos,bicis,etc)
     def estado(self): 
         if self.running:
             vehiculos = traci.vehicle.getIDList()
-            tipos = traci.vehicletype.getIDList
-            print(f"Paso {self.step+1}")
+            tipos = traci.vehicletype.getIDList()
+            print(f"Paso {self.step}")
             print(f"Vehiculo {vehiculos}")
             print(f"Tipo de vehiculos: {tipos}")
 
         else:
             print("La simulacion no esta en ejecucion")
+
+    #Funcion para mostrar el menu 
+    def mostrar_menu(self): #define una funcion para mostrar el menu 
+        print(" Menu :D ")
+        print("----------------------------------")
+        print("1. Iniciar simulacion")
+        print("2. Detener Simulacion")
+        print("3. Reiniciar simulacion")
+        print("4. Mostrar estado del trafico")
+        print("5. Salir")
             
