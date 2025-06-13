@@ -1,6 +1,6 @@
 from control import Simulacion #importa la clase Simulacion
 
-def mostrar_menu(): #define una funcion para mostrar el menu 
+"""def mostrar_menu(): #define una funcion para mostrar el menu 
 
     print(" Menu :D ")
     print("----------------------------------")
@@ -9,12 +9,13 @@ def mostrar_menu(): #define una funcion para mostrar el menu
     print("3. Reiniciar simulacion")
     print("4. Mostrar estado del trafico")
     print("5. Salir")
+"""
 
 sim = Simulacion() #crea una instancia de la clase
 
 
 while True:
-    mostrar_menu()
+    sim.mostrar_menu()
     op = input("Ingrese su opcion: ")
 
     try:
