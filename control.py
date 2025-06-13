@@ -1,6 +1,7 @@
-import traci #para controlar SUMO
-import subprocess #Permite ejecutar comandos, se puede usar para procesos de sumo
-import os #permite interactuar con el sistema de sumo (leer rutas, vehiculos, archivos, etc.)
+import traci #Libreria para controlar SUMO
+import time
+#import subprocess #Permite ejecutar comandos, se puede usar para procesos de sumo
+#import os #permite interactuar con el sistema de sumo (leer rutas, vehiculos, archivos, etc.)
 
 # step() Avanza un paso de simulacion 
 # load () carga un nuevo escenario 
@@ -10,36 +11,61 @@ import os #permite interactuar con el sistema de sumo (leer rutas, vehiculos, ar
 # getSpeed(vehID) obtiene la velocidad de un vehiculo 
 # setRedYellowGreenState(tlsID,state) cambia el semaforo 
 
-SUMO = "sumo-gui" #abre la simulacion con interfaz
-ARCH ="mapa.sumocfg" #nombre del archivo
+# Ruta a sumocfg
+sumo_cfg = "mapa.sumocfg"
+
+# Comando para lanzar SUMO
+sumo_cmd = ["sumo-gui", "-c", sumo_cfg]
 
 class Simulacion:
-    def __init__(self):
-        self.running = False #inidica si la simulacion esta activa
-        self.step = 0 #cuenta el numero de pasos simulados 
 
-    def start(self):
+    #Constructor
+    def __init__(self):
+        self.running = False #Estado de la simulacion
+        self.step = 0 #Contador de pasos simulados 
+
+    #Funcion que inicia la simulacion en SUMO-GUI
+    def start(self, pasos, delay):
         if not self.running:
-            traci.start(SUMO, "-c", ARCH) #unsa -c para indicar el archivo
+            traci.start(sumo_cmd)
             self.running = True
-            self.step = 0
             print("Simulacion iniciada")
 
+            for _ in range(pasos):
+                if traci.simulation.getMinExpectedNumber() == 0:
+                    print("No quedan vehículos.")
+                    break
+                traci.simulationStep()
+                self.step += 1
+                print(f"Paso {self.step} ejecutado.")
+                time.sleep(delay)
+
+            self.stop()
+
+    #Funcion que detiene la simulacion
     def stop(self):
         if self.running:
             traci.close()
             self.running = False
             print("Simulacion Detenida")
 
-    def reload(self): #si la simulacion esta activa la apaga y vuelve a reiniciarla y la activa nuevamente 
+    #Funcion que recarga la simulacion
+    def reload(self, pasos, delay): #si la simulacion esta activa la apaga y vuelve a reiniciarla y la activa nuevamente 
         if self.running:
             traci.close()
-        traci.start([SUMO, "-c",ARCH])
-        self.running = True
-        self.step = 0
+        self.step = 0 #Reiniciar el contador
+        self.start()
         print("Simulacion reiniciada")
 
+    #Funcion que muestra el estado de trafico(vehiculos,bicis,etc)
     def estado(self): 
         if self.running:
-            traci.simulacionStep()
+            vehiculos = traci.vehicle.getIDList()
+            tipos = traci.vehicletype.getIDList
+            print(f"Paso {self.step+1}")
+            print(f"Vehiculo {vehiculos}")
+            print(f"Tipo de vehiculos: {tipos}")
+
+        else:
+            print("La simulacion no esta en ejecucion")
             
