@@ -42,6 +42,4 @@ class Simulacion:
     def estado(self): 
         if self.running:
             traci.simulacionStep()
-            self.step += 1
-            vehiculos = traci.vehiculo.getIDList() # getIDList() es una funcion de traci que muestra toda la lista de los vehiculos en la simulacion 
             
