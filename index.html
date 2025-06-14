@@ -1,68 +1,82 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simulador de Trafico </title>
-
-     <!-- Leaflet CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-
-  <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-    <style>
-        body { margin: 0; padding: 0; }
-        #container {
-            display: grid;
-            grid-template-columns: 70% 30%;
-            height: 100vh;
-        }
-        #map { height: 70vh; }
-        #dashboard {
-            padding: 15px;
-            background: #f5f5f5;
-            border-left: 1px solid #ddd;
-        }
-        #command-panel {
-            margin-top: 20px;
-            padding: 15px;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Simulador de Tráfico</title>
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div id="container">
-        <div id="map"></div>
-        <div id="dashboard">
-            <h2>Dashboard de Simulacion</h2>
+  <div id="container">
+    <!-- Panel lateral -->
+    <aside id="sidebar">
+      <h1> <img src="imagenes/car-bump.png" alt="Carro" /> Tráfico Urbano</h1>
 
-            <div class="stats">
-            <div>Vehiculos: <span id="vehicle-count">0</span>  </div>
-            <div>Peatonos: <span id="vehicle-count">0</span>  </div>
-            <div>Semaforos: <span id="vehicle-count">0</span>  </div>
-            </div>
+      <nav class="menu">
+        <button id="download-button">  <img src="imagenes/download.png" alt="Descargar" />  Guardar Simulación </button>
+        <button id="folder-button">  <img src="imagenes/folder-open.png" alt="Guardar" /> Simulaciones Guardadas </button>
+        <button id="clock-button">  <img src="imagenes/clock-three.png" alt="Historial" />  Historial</button>
+        <button id="settings-button">  <img src="imagenes/settings.png" alt="Ajustes" />  Ajustes</button>
+      </nav>
 
-            <div class="chart-container">
-                <canvas id="traffic-chart"></canvas>
-            </div>
+      <section id="legend">
+        <h3>Tráfico en tiempo real</h3>
 
-            <div id="command-panel">    
-                <h3>Comandos NLP</h3>
-                <input type="text" id="command-input" placeholder="Escribe un comando...">
-                <button id="send-command">Enviar</button>
-                <div id="command-history"></div>
-            </div>
-        </div>
-    </div>
+             <button id="high-button">
+                 <img src="imagenes/cross-circle.png" alt="Alto" /> Congestión Alta    </button>
+             
 
-     <!-- Leaflet JS -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <!-- Socket.io -->
-    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
-    <!-- Nuestro JS -->
-    <script src="app.js"></script>
+             <button id="medium-button">
+                 <img src="imagenes/minus-circle.png" alt="Medio" /> Tráfico Moderado</button>
+             
+
+             <button id="low-button">
+                 <img src="imagenes/check-circle.png" alt="Bajo" /> Tráfico Fluido</button>
+             
+      </section>
+    </aside>
+
+
+
+    <!-- Panel superior y pie -->
+    <main id="main-content">
+      <div id="top-bar">
+        <div class="input-section">
+            <input type="text" id="instruction-input" placeholder="Escribe o di una instrucción..." />
+            <button id="mic-button">
+                 <img src="imagenes/circle-microphone.png" alt="Micrófono" />
+            </button>
+
+            <button id="send-button">
+                 <img src="imagenes/paper-plane-top.png" alt="Enviar" />     
+                 </button>
+             </div>
+
+        <div class="controls2">
+
+             <button id="play-button">
+                 <img src="imagenes/play-circle.png" alt="Play" />     
+                 </button>
+             
+
+             <button id="pause-button">
+                 <img src="imagenes/pause-circle.png" alt="Pause" />     
+                 </button>
+             
+
+             <button id="stop-button">
+                 <img src="imagenes/stop-circle.png" alt="Stop" />     
+                 </button>
+             
+             </div>
+             </div>
+
+    
+      <footer id="bottom-info">
+        <p><strong>Zona Seleccionada:</strong> </p>
+        <p> Rutas alternas</p>
+      </footer>
+    </main>
+  </div>
 </body>
 </html>
