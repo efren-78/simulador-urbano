@@ -55,14 +55,6 @@ body {
   margin-bottom: 10px;
 }
 
-.legend{
-  margin: 5px 0;
-  padding: 8px;
-  border-radius: 4px;
-  background-color: #1c2a44;
-  font-size: 13px;
-}
-
 /* Main Content */
 #main-content {
   flex: 1;
