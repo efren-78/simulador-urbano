@@ -54,6 +54,14 @@ class Simulacion:
             self.running = False
             print("Simulacion Detenida")
 
+
+    #Funcion que detiene la simulacion
+    def stop(self):
+        if self.running:
+            traci.close()
+            self.running = False
+            print("Simulacion Detenida")
+
     #Funcion que recarga la simulacion
     def reload(self, pasos, delay): #si la simulacion esta activa la apaga y vuelve a reiniciarla y la activa nuevamente 
         if self.running:
