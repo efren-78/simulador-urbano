@@ -11,7 +11,7 @@ import time
 # getSpeed(vehID) obtiene la velocidad de un vehiculo 
 # setRedYellowGreenState(tlsID,state) cambia el semaforo 
 
-# Ruta a sumocfg
+# Ruta a sumocfgco
 sumo_cfg = "mapa.sumocfg"
 
 # Comando para lanzar SUMO
