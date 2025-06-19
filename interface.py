@@ -61,20 +61,27 @@ def salir():
     root.quit()
 
 # Botones conectados
-btn_guardar = crear_boton("▶ Iniciar Simulación", iniciar_simulacion)
-btn_guardar.pack(fill="x", padx=20, pady=5)
+btn_iniciar = crear_boton("▶ Iniciar Simulación", iniciar_simulacion)
+btn_iniciar.pack(fill="x", padx=20, pady=5)
 
-btn_guardadas = crear_boton("⏸️ Pausar Simulación", pausar_simulacion)
-btn_guardadas.pack(fill="x", padx=20, pady=5)
+btn_pausar = crear_boton("⏸️ Pausar Simulación", pausar_simulacion)
+btn_pausar.pack(fill="x", padx=20, pady=5)
 
-btn_historial = crear_boton("↻ Reiniciar simulación", reiniciar_simulacion)
-btn_historial.pack(fill="x", padx=20, pady=5)
+btn_reiniciar = crear_boton("↻ Reiniciar simulación", reiniciar_simulacion)
+btn_reiniciar.pack(fill="x", padx=20, pady=5)
 
-btn_estado = crear_boton("📊 Estado del Tráfico", mostrar_estado)
+btn_estado = crear_boton("📊 Mostrar Estado", mostrar_estado)
 btn_estado.pack(fill="x", padx=20, pady=5)
 
-btn_ajustes = crear_boton("📥 Salir", salir)
-btn_ajustes.pack(fill="x", padx=20, pady=5)
+# ✅ Nuevo botón para cerrar calle
+def simular_cierre():
+    sim.cerrar_calle(calle_id="E1", ruta_alternativa=["E0", "E2", "E3", "E4"])
+
+btn_cerrar = crear_boton("🚧 Cerrar calle E1", simular_cierre)
+btn_cerrar.pack(fill="x", padx=20, pady=5)
+
+btn_salir = crear_boton("📥 Salir", salir)
+btn_salir.pack(fill="x", padx=20, pady=5)
 
 # Tráfico en tiempo real
 tr_label = tk.Label(sidebar, text="\nTráfico en tiempo real", font=("Arial", 12, "bold"), bg=COLOR_BG, fg=COLOR_TEXT)

@@ -51,5 +51,7 @@ while True:
         case 5: 
             sim.stop()
             print("Saliendo...")
+        case 6:
+         sim.cerrar_calle()
         case _:
             print("Opcion no valida")
