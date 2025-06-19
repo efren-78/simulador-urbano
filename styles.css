@@ -249,3 +249,10 @@ body {
   object-fit: contain;
  
 }
+
+#mapaCanvas {
+  background-color: #f9f9f9;
+  border: 1px solid #aaa;
+  display: block;
+  margin: 20px auto;
+}
