@@ -33,15 +33,16 @@ def stop():
     if sim.running:
         sim.stop()
         return {"status": "Simulación detenida"}
-    return {"status": "Simulación no estaba en ejecucion"}
+    return {"status": "Simulación no esta en ejecucion para detenerse"}
 
 #Endpoint de recargar simulacion
 @simulacion.get("/reload")
 def reload():
     if sim.running:
-       sim.stop()
-    sim.reload(100, 1)
-    return {"status": "Simulación reiniciada"}
+        sim.stop()
+        sim.reload(100, 1)
+        return {"status": "Simulación reiniciada finalizada"}
+    return {"status": "Simulación no esta en ejecucion para reiniciarse"}
     
 """-------Extraccion de datos-------"""
 #Endpoint de extraccion de vehiculos de SUMO
