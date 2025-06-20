@@ -7,7 +7,7 @@ from mapa import extraer_vehiculos
 sumo_cfg = "mapa.sumocfg"
 
 # Comando para lanzar SUMO
-sumo_cmd = ["sumo-gui", "-c", sumo_cfg]
+sumo_cmd = ["sumo", "-c", sumo_cfg]
 
 class Simulacion:
 
