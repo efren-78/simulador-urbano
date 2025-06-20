@@ -32,7 +32,7 @@ class Simulacion:
                 self.step += 1
 
                 # Extraer datos desde mapa.py
-                self.historial = extraer_vehiculos()  # llamas a la función importada de mapa.py
+                self.historial.append(extraer_vehiculos())
 
                 time.sleep(delay)
                 
