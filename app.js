@@ -43,26 +43,45 @@ function dibujarCalles() {
       calcularLimites(data);
       calcularTransformacion();
 
-      data.forEach(calle => {
+            data.forEach(calle => {
         const puntos = calle.puntos;
         if (puntos.length < 2) return;
 
+        // Transformar los puntos con escala y offset
+        const camino = puntos.map(p => ({
+          x: p.x * escala + offsetX,
+          y: p.y * escala + offsetY
+        }));
+
+        // 1. Dibujar la calle en negro (base gruesa)
         ctx.beginPath();
-        ctx.moveTo(puntos[0].x * escala + offsetX, puntos[0].y * escala + offsetY);
-
-        for (let i = 1; i < puntos.length; i++) {
-          const x = puntos[i].x * escala + offsetX;
-          const y = puntos[i].y * escala + offsetY;
-          ctx.lineTo(x, y);
+        ctx.moveTo(camino[0].x, camino[0].y);
+        for (let i = 1; i < camino.length; i++) {
+          ctx.lineTo(camino[i].x, camino[i].y);
         }
+        ctx.strokeStyle = "#000"; // Negro
+        ctx.lineWidth = 6;
+        ctx.stroke();
 
-        ctx.strokeStyle = "#888";
-        ctx.lineWidth = 1;
+        // 2. Dibujar la línea central amarilla (más delgada)
+        ctx.beginPath();
+        ctx.moveTo(camino[0].x, camino[0].y);
+        for (let i = 1; i < camino.length; i++) {
+          ctx.lineTo(camino[i].x, camino[i].y);
+        }
+        ctx.strokeStyle = "#FFD700"; // Amarillo dorado
+        ctx.lineWidth = 2;
         ctx.stroke();
       });
+
     })
     .catch(err => console.error("Error al dibujar calles:", err));
 }
+
+
+
+const iconoAuto = new Image();
+iconoAuto.src = "imagenes/caricono.png"; // Asegúrate que esté en la misma carpeta
 
 // Dibujar vehículos en el canvas
 function actualizarVehiculos() {
@@ -73,15 +92,17 @@ function actualizarVehiculos() {
       dibujarCalles(); // Redibujar calles en cada actualización
 
       data.forEach(v => {
-        const x = v.posicion.x * escala + offsetX;
-        const y = v.posicion.y * escala + offsetY;
+  const x = v.posicion.x * escala + offsetX;
+  const y = v.posicion.y * escala + offsetY;
 
-        ctx.beginPath();
-        ctx.arc(x, y, 5, 0, 2 * Math.PI);
-        ctx.fillStyle = "blue";
-        ctx.fill();
-        ctx.strokeText(v.id, x + 7, y); // Mostrar ID al lado
-      });
+  const tamaño = 35; // tamaño del ícono
+  ctx.drawImage(iconoAuto, x - tamaño / 2, y - tamaño / 2, tamaño, tamaño);
+
+  ctx.font = "10px Arial";
+  ctx.fillStyle = "#000";
+  ctx.fillText(v.id, x + 10, y);
+});
+
     })
     .catch(err => console.error("Error al obtener vehículos:", err));
 }
