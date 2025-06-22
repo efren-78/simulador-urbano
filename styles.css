@@ -62,7 +62,10 @@ body {
   flex-direction: column;
   background: #ffffff;
   color: #222;
+ 
 }
+
+
 
 #top-bar {
   background: #0f1f38;
@@ -71,10 +74,13 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding-right: 250px;
+  padding-left: 250px;
 }
 
 #top-bar input {
-  width: 60%;
+  width: 400px;
+  height: 30px;
   padding: 8px;
   border-radius: 6px;
   border: none;
@@ -156,66 +162,7 @@ body {
 #play-button:hover {
   background-color: #2a3d5d; 
 }
-/*
-#pause-button {
-  background-color: #0f1f38;
-  border: none;
-  padding: 2px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background 0.3s;
-}
 
-#pause-button img {
-  width: 25px;
-  height: 25px;
-  object-fit: contain;
- 
-}
-
-#pause-button:hover {
-  background-color: #2a3d5d; 
-}*/
-
-#stop-button {
-  background-color: #0f1f38;
-  border: none;
-  padding: 2px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background 0.3s;
-}
-
-#stop-button img {
-  width: 25px;
-  height: 25px;
-  object-fit: contain;
- 
-}
-
-#stop-button:hover {
-  background-color: #2a3d5d; 
-}
-
-#reload-button {
-  background-color: #0f1f38;
-  border: none;
-  padding: 2px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background 0.3s;
-}
-
-#reload-button img {
-  width: 25px;
-  height: 25px;
-  object-fit: contain;
- 
-}
-
-#reload-button:hover {
-  background-color: #2a3d5d; 
-}
 
 .controls2 {
   display: flex;
@@ -271,9 +218,29 @@ body {
  
 }
 
-#mapaCanvas {
-  background-color: #f9f9f9;
+#contenedor-mapas {
+  background-color: #ffffff;
   border: 1px solid #aaa;
   display: block;
   margin: 20px auto;
+}
+
+
+/* Estilo para el botón */
+#reload-button, #stop-button, #play-button, #salir-button {
+  position: relative;
+  padding: 10px 20px;
+  font-size: 16px;
+  background-color: #0F1F38;
+  color: white;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+#reload-button img, #stop-button img, #play-button img, #salir-button img {
+  width: 25px;
+  height: 25px;
+  object-fit: contain;
+ 
 }

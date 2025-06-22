@@ -1,16 +1,20 @@
 const API_URL = "http://localhost:8000";
-const canvas = document.getElementById("mapaCanvas");
-const ctx = canvas.getContext("2d");
+
+const callesCanvas = document.getElementById("callesCanvas");
+const callesCtx = callesCanvas.getContext("2d");
+
+const autosCanvas = document.getElementById("autosCanvas");
+const autosCtx = autosCanvas.getContext("2d");
 
 // Variables globales de transformación
 let escala = 1;
 let offsetX = 0;
 let offsetY = 0;
 
-// Función para encontrar límites del mapa
 let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
 
 function calcularLimites(calles) {
+  minX = Infinity; minY = Infinity; maxX = -Infinity; maxY = -Infinity;
   calles.forEach(calle => {
     calle.puntos.forEach(p => {
       if (p.x < minX) minX = p.x;
@@ -21,21 +25,19 @@ function calcularLimites(calles) {
   });
 }
 
-// Calcular escala y desplazamiento para ajustar al canvas
 function calcularTransformacion() {
   const margen = 20;
   const anchoDatos = maxX - minX;
   const altoDatos = maxY - minY;
 
-  const escalaX = (canvas.width - margen * 2) / anchoDatos;
-  const escalaY = (canvas.height - margen * 2) / altoDatos;
+  const escalaX = (callesCanvas.width - margen * 2) / anchoDatos;
+  const escalaY = (callesCanvas.height - margen * 2) / altoDatos;
 
   escala = Math.min(escalaX, escalaY);
   offsetX = -minX * escala + margen;
   offsetY = -minY * escala + margen;
 }
 
-// Dibujar calles en el canvas
 function dibujarCalles() {
   fetch(`${API_URL}/calles`)
     .then(res => res.json())
@@ -43,77 +45,100 @@ function dibujarCalles() {
       calcularLimites(data);
       calcularTransformacion();
 
-            data.forEach(calle => {
+      data.forEach(calle => {
         const puntos = calle.puntos;
         if (puntos.length < 2) return;
 
-        // Transformar los puntos con escala y offset
         const camino = puntos.map(p => ({
           x: p.x * escala + offsetX,
-          y: p.y * escala + offsetY
+          y: (maxY - p.y) * escala + offsetY
         }));
 
-        // 1. Dibujar la calle en negro (base gruesa)
-        ctx.beginPath();
-        ctx.moveTo(camino[0].x, camino[0].y);
+        // Calle base negra (línea gruesa)
+        callesCtx.beginPath();
+        callesCtx.moveTo(camino[0].x, camino[0].y);
         for (let i = 1; i < camino.length; i++) {
-          ctx.lineTo(camino[i].x, camino[i].y);
+          callesCtx.lineTo(camino[i].x, camino[i].y);
         }
-        ctx.strokeStyle = "#000"; // Negro
-        ctx.lineWidth = 6;
-        ctx.stroke();
+        callesCtx.strokeStyle = "#000";
+        callesCtx.lineWidth = 20;
+        callesCtx.stroke();
 
-        // 2. Dibujar la línea central amarilla (más delgada)
-        ctx.beginPath();
-        ctx.moveTo(camino[0].x, camino[0].y);
+        // Línea central amarilla (más delgada)
+        callesCtx.beginPath();
+        callesCtx.moveTo(camino[0].x, camino[0].y);
         for (let i = 1; i < camino.length; i++) {
-          ctx.lineTo(camino[i].x, camino[i].y);
+          callesCtx.lineTo(camino[i].x, camino[i].y);
         }
-        ctx.strokeStyle = "#FFD700"; // Amarillo dorado
-        ctx.lineWidth = 2;
-        ctx.stroke();
+        callesCtx.strokeStyle = "#FFD700";
+        callesCtx.lineWidth = 5;
+        callesCtx.stroke();
       });
-
     })
     .catch(err => console.error("Error al dibujar calles:", err));
 }
 
 
+const iconoCar1 = new Image();
+iconoCar1.src = "imagenes/caricono.png"; // Primer ícono
 
-const iconoAuto = new Image();
-iconoAuto.src = "imagenes/caricono.png"; // Asegúrate que esté en la misma carpeta
+const iconoCar2 = new Image();
+iconoCar2.src = "imagenes/caricono2.png"; // Segundo ícono
 
-// Dibujar vehículos en el canvas
+const iconosVehiculos = [iconoCar1, iconoCar2]; // Array con los íconos
+
+// Aquí vamos a crear un mapa para asignar un ícono específico a cada vehículo.
+const vehiculosConIconos = new Map();
+
+function asignarIcono(v, index) {
+  // Verificamos si el vehículo ya tiene un ícono asignado
+  if (!vehiculosConIconos.has(v.id)) {
+    // Asignamos un ícono según el índice
+    const iconoSeleccionado = iconosVehiculos[index % iconosVehiculos.length];
+    vehiculosConIconos.set(v.id, iconoSeleccionado);
+  }
+}
+
 function actualizarVehiculos() {
   fetch(`${API_URL}/vehiculos`)
     .then(res => res.json())
     .then(data => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      dibujarCalles(); // Redibujar calles en cada actualización
+      // Limpiar solo el canvas de autos
+      autosCtx.clearRect(0, 0, autosCanvas.width, autosCanvas.height);
 
-      data.forEach(v => {
-  const x = v.posicion.x * escala + offsetX;
-  const y = v.posicion.y * escala + offsetY;
+      data.forEach((v, index) => {
+        // Asignar el ícono al vehículo si no lo tiene
+        asignarIcono(v, index);
 
-  const tamaño = 35; // tamaño del ícono
-  ctx.drawImage(iconoAuto, x - tamaño / 2, y - tamaño / 2, tamaño, tamaño);
+        const x = v.posicion.x * escala + offsetX;
+        const y = (maxY - v.posicion.y) * escala + offsetY;
+        const anchoIcono = 60;  // Ancho del ícono
+        const altoIcono = 40;   // Alto del ícono
 
-  ctx.font = "10px Arial";
-  ctx.fillStyle = "#000";
-  ctx.fillText(v.id, x + 10, y);
-});
+      // Obtener el ícono asignado desde el mapa
+        const iconoSeleccionado = vehiculosConIconos.get(v.id);
 
+// Dibujar el ícono correspondiente
+autosCtx.drawImage(iconoSeleccionado, x - anchoIcono / 2, y - altoIcono / 2, anchoIcono, altoIcono);
+
+autosCtx.font = "10px Arial";
+autosCtx.fillStyle = "#000";
+autosCtx.fillText(v.id, x + 10, y);
+      });
     })
     .catch(err => console.error("Error al obtener vehículos:", err));
 }
 
-// Inicializar calles
+
+
+
+// Iniciar dibujo de calles
 dibujarCalles();
 
 // Actualizar vehículos cada segundo
 setInterval(actualizarVehiculos, 1000);
 
-// Botones de control
+// Botones de control (igual que antes)
 document.getElementById("play-button").addEventListener("click", () => {
   fetch(`${API_URL}/start`)
     .then(res => res.json())

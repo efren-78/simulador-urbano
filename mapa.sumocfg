@@ -1,7 +1,7 @@
 <configuration>
     <input>
-        <net-file value="mapa.net.xml"/>
-        <route-files value="mapa.rou.xml"/>
+        <net-file value="RedPrueba.net.xml"/>
+        <route-files value="RedPrueba.rou.xml"/>
     </input>
 
     <processing>

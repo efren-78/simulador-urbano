@@ -13,11 +13,11 @@
       <h1> <img src="imagenes/car-bump.png" alt="Carro" /> Tráfico Urbano</h1>
 
       <nav class="menu">
-        <!--<button id="download-button">  <img src="imagenes/download.png" alt="Descargar" />  Guardar Simulación </button>
-        <button id="folder-button">  <img src="imagenes/folder-open.png" alt="Guardar" /> Simulaciones Guardadas </button>
-        <button id="clock-button">  <img src="imagenes/clock-three.png" alt="Historial" />  Historial</button>
-        <button id="settings-button">  <img src="imagenes/settings.png" alt="Ajustes" />  Ajustes</button>
-        </nav>-->
+        <button id="play-button">  <img src="imagenes/play-circle.png" alt="Descargar" />  Iniciar Simulación </button>
+        <button id="stop-button">  <img src="imagenes/pause-circle.png" alt="Guardar" /> Detener Simulación </button>
+        <button id="reload-button">  <img src="imagenes/reload-circle.png" alt="Historial" />  Reiniciar Simulación </button>
+        <button id="salir-button">  <img src="imagenes/salir.png" alt="Ajustes" />  Salir </button>
+        </nav>
 
         <nav class="menu">
         <h3>Tráfico en tiempo real</h3>
@@ -50,33 +50,17 @@
                  <img src="imagenes/paper-plane-top.png" alt="Enviar" />     
                  </button>
              </div>
-        
-        <!-- Botones basicos de la simulacion -->
-        <div class="controls2">
 
-              <button id="play-button">
-                 <img src="imagenes/play-circle.png" alt="Play" />     
-              </button>
-             
-
-             <!--<button id="pause-button">
-                 <img src="imagenes/pause-circle.png" alt="Pause" />     
-                 </button>-->
-             
-
-             <button id="stop-button">
-                 <img src="imagenes/stop-circle.png" alt="Stop" />     
-              </button>
-
-              <button id="reload-button">
-                 <img src="imagenes/reload-circle.png" alt="Reload" />     
-              </button>
-             
-             </div>
              </div>
 
         <!-- Canva para el mapa (falta ajustar) -->   
-      <canvas id="mapaCanvas" width="800" height="600" style="border:1px solid #ccc; margin-top: 20px;"></canvas>
+
+        
+<div id="contenedor-mapas" style="width: 800px; height: 600px; margin: 5px auto; position: relative; border: 1px solid #ccc;">
+  <canvas id="callesCanvas" width="800" height="600" style="position: absolute; left: 0; top: 0; z-index: 1;"></canvas>
+  <canvas id="autosCanvas" width="800" height="600" style="position: absolute; left: 0; top: 0; z-index: 2;"></canvas>
+</div>
+
 
       <footer id="bottom-info">
         <p><strong>Zona Seleccionada:</strong> </p>
