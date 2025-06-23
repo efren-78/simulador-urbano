@@ -1,5 +1,5 @@
 from control import Simulacion #importa la clase Simulacion
-from mapa import extraer_calles, extraer_vehiculos
+from mapa import extraer_calles, extraer_vehiculos, extraer_nodos
 from typing import Union
 from fastapi import FastAPI
 import threading
@@ -57,4 +57,9 @@ def vehiculos():
 def calles():
     return extraer_calles()
 
-    
+
+
+
+@simulacion.get("/nodos")
+def nodos():
+    return extraer_nodos()

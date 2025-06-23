@@ -79,11 +79,40 @@ function dibujarCalles() {
 }
 
 
+function dibujarNodos() {   // solo queria probarrrrr
+  fetch(`${API_URL}/nodos`)
+    .then(res => res.json())
+    .then(data => {
+      data.forEach(nodo => {
+        const x = nodo.x * escala + offsetX;
+        const y = (maxY - nodo.y) * escala + offsetY;
+
+        // Círculo negro
+        callesCtx.beginPath();
+        callesCtx.arc(x, y, 35, 0, 2 * Math.PI); // tamaño del nodo
+        callesCtx.fillStyle = "#000"; // Negro (como fondo de calle)
+        callesCtx.fill();
+
+        // Borde amarillo
+        callesCtx.lineWidth = 3;
+        callesCtx.strokeStyle = "#FFD700"; // Amarillo
+        callesCtx.stroke();
+
+        // Texto del ID del nodo (opcional)
+        callesCtx.font = "10px Arial";
+        callesCtx.fillStyle = "#FFF"; // Blanco para que resalte
+        callesCtx.fillText(nodo.id, x + 8, y - 8);
+      });
+    })
+    .catch(err => console.error("Error al dibujar nodos:", err));
+}
+
+
 const iconoCar1 = new Image();
-iconoCar1.src = "imagenes/caricono.png"; 
+iconoCar1.src = "imagenes/caricono.png"; // Primer ícono
 
 const iconoCar2 = new Image();
-iconoCar2.src = "imagenes/caricono2.png"; 
+iconoCar2.src = "imagenes/caricono2.png"; // Segundo ícono
 
 const iconoCar3 = new Image();
 iconoCar3.src = "imagenes/caricono3.png";
@@ -97,8 +126,9 @@ iconoCar5.src = "imagenes/caricono5.png";
 const iconoCar6 = new Image();
 iconoCar6.src = "imagenes/caricono6.png";
 
-const iconosVehiculos = [iconoCar1, iconoCar2, iconoCar3, iconoCar4, iconoCar5, iconoCar6];
+const iconosVehiculos = [iconoCar1, iconoCar2, iconoCar3, iconoCar4,iconoCar5, iconoCar6]; // Array con los íconos
 
+// Aquí vamos a crear un mapa para asignar un ícono específico a cada vehículo.
 const vehiculosConIconos = new Map();
 
 function asignarIcono(v, index) {
@@ -145,6 +175,7 @@ autosCtx.fillText(v.id, x + 10, y);
 
 // Iniciar dibujo de calles
 dibujarCalles();
+//dibujarNodos();
 
 // Actualizar vehículos cada segundo
 setInterval(actualizarVehiculos, 1000);
