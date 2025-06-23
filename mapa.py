@@ -4,7 +4,7 @@ import traci
 
 
 #Funcion que extrae los nodos y bordes del archivo net de SUMO
-def extraer_calles(archivo_net="SumoRed.net.xml"):
+def extraer_calles(archivo_net="TonyRed.net.xml"):
     net = sumolib.net.readNet(archivo_net)
 
     calles = []
@@ -43,7 +43,7 @@ def extraer_vehiculos():
     return datos
 
 
-def extraer_nodos(archivo_net="SumoRed.net.xml"):
+def extraer_nodos(archivo_net="TonyRed.net.xml"):
     net = sumolib.net.readNet(archivo_net)
 
     nodos = []

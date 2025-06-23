@@ -1,0 +1,23 @@
+<routes>
+    <vType id="vehiculo" accel="1.0" decel="4.5" length="5" maxSpeed="25"/>
+
+    <!-- Ruta que va desde J0 (E0) -> J1 -> J2 (E1) -->
+    <route id="ruta1" edges="E0 E1 E2"/>
+    <vehicle id="auto1" type="vehiculo" route="ruta1" depart="0"/>
+
+    <!-- Otra ruta larga: E0 -> E2 -> E3 -> E4 -->
+    <route id="ruta2" edges="E0 E3 E4 E5"/>
+    <vehicle id="auto2" type="vehiculo" route="ruta2" depart="4"/>
+
+    <!-- Otra ruta larga: E0 -> E3 -> E6 -> E7 -> E8 -->
+    <route id="ruta3" edges="E0 E3 E6 E7 E8"/>
+    <vehicle id="auto3" type="vehiculo" route="ruta3" depart="8"/>
+
+
+    <!-- Otra ruta larga: E9 -> E10 -> E11 -> E12 -> E13 -->
+    <route id="ruta4" edges="E9 E10 E11 E12 E13"/>
+    <vehicle id="auto4" type="vehiculo" route="ruta4" depart="12"/>
+
+
+
+</routes>

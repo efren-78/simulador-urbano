@@ -1,7 +1,7 @@
 <configuration>
     <input>
-        <net-file value="SumoRed.net.xml"/>
-        <route-files value="SumoRed.rou.xml"/>
+        <net-file value="TonyRed.net.xml"/>
+        <route-files value="TonyRed.rou.xml"/>
     </input>
 
     <processing>

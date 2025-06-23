@@ -115,10 +115,10 @@ const iconoCar2 = new Image();
 iconoCar2.src = "imagenes/caricono2.png"; // Segundo ícono
 
 const iconoCar3 = new Image();
-iconoCar3.src = "imagenes/caricono3.png";
+iconoCar3.src = "imagenes/caricono3.png"
 
 const iconoCar4 = new Image();
-iconoCar3.src = "imagenes/caricono4.png";
+iconoCar4.src = "imagenes/caricono4.png"
 
 const iconoCar5 = new Image();
 iconoCar5.src = "imagenes/caricono5.png";
@@ -126,7 +126,7 @@ iconoCar5.src = "imagenes/caricono5.png";
 const iconoCar6 = new Image();
 iconoCar6.src = "imagenes/caricono6.png";
 
-const iconosVehiculos = [iconoCar1, iconoCar2, iconoCar3, iconoCar4,iconoCar5, iconoCar6]; // Array con los íconos
+const iconosVehiculos = [iconoCar1, iconoCar2, iconoCar3, iconoCar4, iconoCar5, iconoCar6]; // Array con los íconos
 
 // Aquí vamos a crear un mapa para asignar un ícono específico a cada vehículo.
 const vehiculosConIconos = new Map();
