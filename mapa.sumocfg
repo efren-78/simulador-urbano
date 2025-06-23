@@ -1,7 +1,7 @@
 <configuration>
     <input>
-        <net-file value="RedPrueba.net.xml"/>
-        <route-files value="RedPrueba.rou.xml"/>
+        <net-file value="SumoRed.net.xml"/>
+        <route-files value="SumoRed.rou.xml"/>
     </input>
 
     <processing>
