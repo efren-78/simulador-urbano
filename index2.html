@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Simulador de Tráfico</title>
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="estilos.css" />
 </head>
 <body>
   <div id="container">
@@ -81,11 +81,15 @@
         <div class="controls2">
           <button id="play-button"><img src="imagenes/play-circle.png" alt="Play" /></button>
           <button id="stop-button"><img src="imagenes/stop-circle.png" alt="Stop" /></button>
-          <button id="reload-button"><img src="imagenes/reload.png" alt="Reload" /></button>
+          <button id="reload-button"><img src="imagenes/reload-circle.png" alt="Reload" /></button>
         </div>
       </div>
 
-      <canvas id="mapaCanvas" width="800" height="600"></canvas>
+        
+<div id="contenedor-mapas" style="width: 800px; height: 600px; margin: 5px auto; position: relative; border: 1px solid #ccc;">
+  <canvas id="callesCanvas" width="800" height="600" style="position: absolute; left: 0; top: 0; z-index: 1;"></canvas>
+  <canvas id="autosCanvas" width="800" height="600" style="position: absolute; left: 0; top: 0; z-index: 2;"></canvas>
+</div>
 
       <footer id="bottom-info">
         <p><strong>Zona Seleccionada:</strong></p>
@@ -93,6 +97,8 @@
       </footer>
     </main>
   </div>
+
+   <script src="app.js"></script> 
 
   <script>
     // Función para reconocimiento de voz
