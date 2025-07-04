@@ -43,6 +43,7 @@ def extraer_vehiculos():
     return datos
 
 
+#Funcion que extrae nodos de SUMO
 def extraer_nodos(archivo_net="TonyRed.net.xml"):
     net = sumolib.net.readNet(archivo_net)
 

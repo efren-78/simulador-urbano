@@ -180,7 +180,7 @@ dibujarCalles();
 // Actualizar vehículos cada segundo
 setInterval(actualizarVehiculos, 1000);
 
-// Botones de control (igual que antes)
+//-------Botones basicos de la simulacion-------
 document.getElementById("play-button").addEventListener("click", () => {
   fetch(`${API_URL}/start`)
     .then(res => res.json())
@@ -197,4 +197,35 @@ document.getElementById("reload-button")?.addEventListener("click", () => {
   fetch(`${API_URL}/reload`)
     .then(res => res.json())
     .then(data => alert(data.status));
+});
+
+//-------Acciones del campo de txt (NLP)-------
+const inputField = document.getElementById("instruction-input");
+
+document.getElementById("send-button").addEventListener("click", () => {
+  const prompt = inputField.value.trim();
+
+  if (!prompt) {
+    alert("Por favor, escribe una instrucción.");
+    return;
+  }
+
+  fetch(`${API_URL}/nlp`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ prompt: prompt })
+  })
+    .then(res => {
+      if (!res.ok) throw new Error("Error al conectar con la API NLP");
+      return res.json();
+    })
+    .then(data => {
+      alert("Respuesta de la IA: " + data.respuesta);  // <-- aquí estaba el error de typo
+    })
+    .catch(err => {
+      console.error("Error en NLP:", err);
+      alert("Hubo un problema al procesar tu instrucción.");
+    });
 });
