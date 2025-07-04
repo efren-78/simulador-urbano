@@ -17,11 +17,13 @@ simulacion.add_middleware(
     allow_headers=["*"],
 )
 
+pasos = 600
+delay = 0.3
 #Endpoint de iniciar simulacion
 @simulacion.get("/start")
 def start():
     if not sim.running:
-        t = threading.Thread(target=sim.start, args=(100, 1))  # pasos, delay
+        t = threading.Thread(target=sim.start, args=(pasos, delay))  # pasos, delay
         t.start()
         return {"status": "Simulación iniciada"}
     else:
@@ -40,7 +42,7 @@ def stop():
 def reload():
     if sim.running:
         sim.stop()
-        sim.reload(100, 1)
+        sim.reload(pasos, delay)
         return {"status": "Simulación reiniciada finalizada"}
     return {"status": "Simulación no esta en ejecucion para reiniciarse"}
     
