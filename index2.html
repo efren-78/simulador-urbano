@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simulador de Tráfico - Configuración</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .fade-out {
+      animation: fadeOut 1s ease-in-out forwards;
+    }
+    @keyframes fadeOut {
+      to {
+        opacity: 0;
+        transform: scale(1.05);
+      }
+    }
+  </style>
+</head>
+
+<body class="relative min-h-screen text-white font-sans overflow-hidden bg-black">
+
+  <!-- Fondo de video -->
+  <video autoplay muted loop playsinline class="absolute inset-0 w-full h-full object-cover z-0 opacity-60">
+    <source src="imagenes/fondo.mp4" type="video/mp4">
+    Tu navegador no soporta el video.
+  </video>
+
+  <!-- Contenido encima del video -->
+  <div class="relative z-10 flex items-center justify-center min-h-screen" id="dashboard">
+    <div class="bg-gradient-to-br from-primary via-secondary to-accent p-10 rounded-2xl shadow-2xl w-full max-w-md backdrop-blur-md border border-light transform transition duration-500">
+      <h1 class="text-3xl font-extrabold mb-6 text-center text-white drop-shadow-md">NeuroTraffic</h1>
+
+      <form id="configForm" class="space-y-6">
+        <div>
+          <label for="numCars" class="block mb-1 text-white font-medium">Número de autos:</label>
+          <input type="number" id="numCars" name="numCars" min="1" max="100" value="10"
+                 class="w-full px-4 py-2 rounded-lg border border-light bg-black/60 text-black focus:outline-none focus:ring-2 focus:ring-accent">
+        </div>
+
+        <div>
+          <label for="trafico" class="block mb-1 text-white font-medium">Condición de tráfico:</label>
+          <select id="trafico" name="trafico"
+                  class="w-full px-4 py-2 rounded-lg border border-light bg-black/60 text-black focus:outline-none focus:ring-2 focus:ring-accent">
+            <option value="fluido">Fluido</option>
+            <option value="moderado">Moderado</option>
+            <option value="congestionado">Congestionado</option>
+          </select>
+        </div>
+
+        <button type="submit"
+                class="w-full bg-secondary hover:bg-accent text-white font-semibold py-2 rounded-lg shadow-md transform hover:scale-105 transition duration-300 ease-in-out">
+          Iniciar Simulador
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('configForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const numCars = document.getElementById('numCars').value;
+      const trafico = document.getElementById('trafico').value;
+
+      // Guardar configuración en localStorage
+      localStorage.setItem('config_numCars', numCars);
+      localStorage.setItem('config_trafico', trafico);
+
+      // Agregar animación de salida y redirigir después
+      const dashboard = document.getElementById('dashboard');
+      dashboard.classList.add('fade-out');
+      setTimeout(() => {
+        window.location.href = 'index.html';
+      }, 1000);
+    });
+  </script>
+</body>
+</html>
