@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from LLM_model import generar_respuesta
 import threading
 
 # Simulación local 3D
@@ -11,7 +12,8 @@ from config import Simulacion
 
 app = FastAPI()
 sim = Simulacion()  # Clase que controlará flags como running, config, etc.
-
+pasos = 200
+delay = 0.2
 # Middleware para frontend
 app.add_middleware(
     CORSMiddleware,
@@ -25,11 +27,6 @@ app.add_middleware(
 class Configuracion(BaseModel):
     numCars: int
     trafico: str
-
-# Prompt NLP
-class PromptRequest(BaseModel):
-    prompt: str
-    max_tokens: int = 150
 
 # Estado interno
 config_actual = {
@@ -72,12 +69,38 @@ def reload():
 
 
 """----------- NLP -----------"""
-"""
+
+class PromptRequest(BaseModel):
+    prompt: str
+    max_tokens: int = 150
+
 @app.post("/nlp")
 def responder(req: PromptRequest):
     try:
-        resultado = generar_respuesta(req.prompt, req.max_tokens)
-        return {"respuesta": resultado}
+        params = generar_respuesta(req.prompt, req.max_tokens)
+
+        if "error" in params:
+            raise HTTPException(status_code=422, detail=params["content"])
+
+        sim.set_config(
+            numCars=int(params.get("numCars", 10)),
+            trafico=params.get("trafico", "moderado")
+        )
+
+        accion = params.get("accion", "").lower()
+
+        if accion == "start":
+            sim.start(pasos, delay)
+        elif accion == "stop":
+            sim.stop()
+        elif accion == "reload":
+            sim.reload(pasos, delay)
+        else:
+            print(f"Acción desconocida: {accion}")
+
+        return {
+            "status": f"Acción '{accion}' ejecutada con {sim.numCars} autos y tráfico {sim.trafico}",
+            "params": params
+        }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error interno: {e}")
-"""
+        raise HTTPException(status_code=500, detail=f"Error NLP: {e}")
