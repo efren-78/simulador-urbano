@@ -182,6 +182,20 @@ function reloadSim() {
   window.simulation.renderer.render(window.simulation.scene, window.simulation.camera);
 }
 
+async function enviarPrompt() {
+  const inputValue = document.getElementById("instruction-input").value;
+
+  const response = await fetch("http://localhost:8000/nlp", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ prompt: inputValue, max_tokens: 150 })
+  });
+
+  const data = await response.json();
+  console.log("Respuesta backend NLP:", data);
+}
+
+
 
 
 /*
@@ -218,6 +232,10 @@ document.getElementById("reload-button").addEventListener("click", () => {
       reloadSim();  // Reiniciar animación
     });
 });
+
+
+document.getElementById("send-button").addEventListener("click", enviarPrompt);
+
 
 init();
 
