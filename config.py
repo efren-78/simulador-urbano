@@ -24,7 +24,7 @@ class Simulacion:
                 if not self.running:
                     print("Simulación interrumpida")
                     break
-            print(f"Paso {i+1}/{pasos}")
+            #print(f"Paso {i+1}/{pasos}")
             time.sleep(delay)
 
         print("Simulación finalizada")
