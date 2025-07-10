@@ -146,12 +146,22 @@ function animate() {
   animationId = requestAnimationFrame(animate);
 }
 
+
 function playSim() {
   if (!running) {
     running = true;
     animate();
   }
 }
+
+fetch("http://localhost:8000/start")
+  .then(res => res.json())
+  .then(data => {
+    if (data.status === "Simulación iniciada") {
+      playSim();  // Activar la animación en el navegador
+    }
+  });
+
 
 function stopSim() {
   running = false;
@@ -172,9 +182,61 @@ function reloadSim() {
   window.simulation.renderer.render(window.simulation.scene, window.simulation.camera);
 }
 
+
+
+/*
 // Eventos
 document.getElementById("play-button").addEventListener("click", playSim);
 document.getElementById("stop-button").addEventListener("click", stopSim);
 document.getElementById("reload-button").addEventListener("click", reloadSim);
+*/
+
+// Botones del frontend conectados al backend
+document.getElementById("play-button").addEventListener("click", () => {
+  fetch("http://localhost:8000/start")
+    .then(res => res.json())
+    .then(data => {
+      console.log(data.status);
+      playSim();  // Activar animación solo si backend respondió correctamente
+    });
+});
+
+document.getElementById("stop-button").addEventListener("click", () => {
+  fetch("http://localhost:8000/stop")
+    .then(res => res.json())
+    .then(data => {
+      console.log(data.status);
+      stopSim();  // Pausar animación
+    });
+});
+
+document.getElementById("reload-button").addEventListener("click", () => {
+  fetch("http://localhost:8000/reload")
+    .then(res => res.json())
+    .then(data => {
+      console.log(data.status);
+      reloadSim();  // Reiniciar animación
+    });
+});
 
 init();
+
+// Enviar configuración al backend
+const numCars = localStorage.getItem("config_numCars") || "10";
+const trafico = localStorage.getItem("config_trafico") || "moderado"
+
+if (!numCars || !trafico) {
+  alert("No se ha configurado la simulación. Redirigiendo...");
+  window.location.href = "index2.html";
+} else {
+  fetch("http://localhost:8000/configurar", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      numCars: parseInt(numCars),
+      trafico: trafico
+    })
+  })
+  .then(res => res.json())
+  .then(data => console.log("Cnfiguracion enviada", data));
+}
