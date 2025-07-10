@@ -4,11 +4,15 @@ import os
 import json
 import re
 
+#cargar variables del .env
 load_dotenv()
 
+#inicializa OpenAI con la APIkey
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
+#funcion principal para generar respuesta
 def generar_respuesta(prompt: str, max_tokens: int = 150) -> dict:
+    #configuracion del comportamiento y prompt
     try:
         response = client.chat.completions.create(
             model="gpt-4o",
@@ -29,17 +33,19 @@ def generar_respuesta(prompt: str, max_tokens: int = 150) -> dict:
                 {"role": "user", "content": prompt}
             ],
             max_tokens=max_tokens,
-            temperature=0.1,
+            temperature=0.1, #respuestas más precisas 
         )
 
+        #obtiene la respuesta generada
         raw_content = response.choices[0].message.content.strip()
         print(f"Respuesta cruda: {raw_content}")
 
-        # Si viene con bloque ```json, lo limpiamos
+        #Limpia el contenido si viene dentro de bloques de código ('''json)
         if raw_content.startswith("```"):
             raw_content = re.sub(r"```[a-z]*", "", raw_content, flags=re.IGNORECASE)
             raw_content = raw_content.strip("`").strip()
 
+        #convierte la cadena 
         params = json.loads(raw_content)
 
         # Validación mínima: debe contener clave 'accion'
@@ -51,7 +57,10 @@ def generar_respuesta(prompt: str, max_tokens: int = 150) -> dict:
 
         return params
 
+    #Manejo de errores si el json es inválido
     except json.JSONDecodeError:
         return {"error": "Respuesta no es JSON válido.", "content": raw_content}
+
+    #manejo de errores generales 
     except Exception as e:
         return {"error": f"Error en OpenAI: {e}"}
