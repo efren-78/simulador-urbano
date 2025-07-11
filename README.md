@@ -15,3 +15,8 @@ Y si no funciona intenta con:
 
 Para correr el codigo inicializa el FastApi con el comando:
 - uvicorn main:app  --reload
+
+
+### Recordatorio
+Para que funcione se debe tener en un archivo .env la declaracion de nuestra ApiKey:
+- OPENAI_API_KEY="sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
