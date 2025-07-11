@@ -5,6 +5,9 @@ const carRoutes = [];
 const carSpeeds = [];
 const semaforos = [];
 
+const carBodies = [];
+let world;
+
 function crearCalleLarga(scene, width, length, rotationY = 0, position = { x: 0, z: 0 }) {
   const geometry = new THREE.PlaneGeometry(width, length);
   const material = new THREE.MeshPhongMaterial({ color: 0x2c2c2c });
@@ -30,33 +33,36 @@ function init() {
   const canvas = document.getElementById("mapaCanvas");
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(75, canvas.clientWidth / canvas.clientHeight, 0.1, 1000);
-  const renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
   renderer.setSize(canvas.clientWidth, canvas.clientHeight);
 
-  // Luz
+  // === MUNDO FÍSICO ===
+  world = new CANNON.World();
+  world.gravity.set(0, -9.82, 0);
+
+  // Suelo físico (invisible)
+  const suelo = new CANNON.Body({
+    mass: 0,
+    shape: new CANNON.Plane()
+  });
+  suelo.quaternion.setFromEuler(-Math.PI / 2, 0, 0);
+  world.addBody(suelo);
+
+  // === LUZ ===
   const light = new THREE.DirectionalLight(0xffffff, 1);
   light.position.set(20, 40, 20);
   scene.add(light);
 
-  // Calles horizontales
+  // === CALLES ===
   for (let i = -20; i <= 20; i += 10) {
     crearCalleLarga(scene, 5, 100, 0, { x: 0, z: i });
-  }
-
-  // Calles verticales
-  for (let i = -20; i <= 20; i += 10) {
     crearCalleLarga(scene, 5, 100, Math.PI / 2, { x: i, z: 0 });
   }
-
-  // Avenida diagonal
   crearCalleLarga(scene, 5, 140, Math.PI / 4, { x: 0, z: 0 });
 
-  // Semáforos
+  // === SEMÁFOROS ===
   crearSemaforo(scene, { x: 0, z: 0 }, "green");
   crearSemaforo(scene, { x: 10, z: -10 }, "red");
-
-  // Autos
-  const carMaterial = new THREE.MeshPhongMaterial({ color: 0xff4444 });
 
   const rutas = [
     { tipo: "horizontal", z: -10 },
@@ -69,23 +75,37 @@ function init() {
     { tipo: "diagonal", offset: 30 }
   ];
 
+  const carMaterial = new THREE.MeshPhongMaterial({ color: 0xff4444 });
+
   rutas.forEach(ruta => {
     const car = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 2), carMaterial);
+    let pos = new THREE.Vector3();
 
     if (ruta.tipo === "horizontal") {
-      car.position.set(-50, 0.5, ruta.z);
+      pos.set(-50, 0.5, ruta.z);
     } else if (ruta.tipo === "vertical") {
-      car.position.set(ruta.x, 0.5, 50);
+      pos.set(ruta.x, 0.5, 50);
       car.rotation.y = Math.PI / 2;
     } else if (ruta.tipo === "diagonal") {
-      car.position.set(-50 + ruta.offset, 0.5, 50 - ruta.offset);
+      pos.set(-50 + ruta.offset, 0.5, 50 - ruta.offset);
       car.rotation.y = -Math.PI / 4;
     }
 
+    car.position.copy(pos);
+    scene.add(car);
     cars.push(car);
     carRoutes.push(ruta);
     carSpeeds.push(0.08 + Math.random() * 0.04);
-    scene.add(car);
+
+    // === Cuerpo físico
+    const carShape = new CANNON.Box(new CANNON.Vec3(0.5, 0.5, 1));
+    const carBody = new CANNON.Body({
+      mass: 5,
+      shape: carShape,
+      position: new CANNON.Vec3(pos.x, pos.y, pos.z)
+    });
+    world.addBody(carBody);
+    carBodies.push(carBody);
   });
 
   camera.position.set(0, 50, 50);
@@ -94,67 +114,82 @@ function init() {
   window.simulation = { scene, camera, renderer };
 }
 
+
 function animate() {
   if (!running) return;
 
   const { scene, camera, renderer } = window.simulation;
 
-  // Semáforos (cada 5 segundos cambia de estado)
+  // === Actualizar semáforos
   const time = performance.now() * 0.001;
-  const cycle = Math.floor(time) % 10 < 5 ? "green" : "red";
+  const ciclo = Math.floor(time) % 10 < 5 ? "green" : "red";
 
   semaforos.forEach(semaforo => {
-    const desiredColor = cycle === "green" ? 0x00ff00 : 0xff0000;
-    if (semaforo.userData.state !== cycle) {
-      semaforo.material.color.setHex(desiredColor);
-      semaforo.userData.state = cycle;
+    const colorDeseado = ciclo === "green" ? 0x00ff00 : 0xff0000;
+    if (semaforo.userData.state !== ciclo) {
+      semaforo.material.color.setHex(colorDeseado);
+      semaforo.userData.state = ciclo;
     }
   });
 
+  // === Avanzar física
+  world.step(1 / 60);
+
   for (let i = 0; i < cars.length; i++) {
     const car = cars[i];
-    const route = carRoutes[i];
-    const speed = carSpeeds[i];
+    const body = carBodies[i];
+    const ruta = carRoutes[i];
+    const velocidad = carSpeeds[i];
 
     let detener = false;
-    semaforos.forEach(semaforo => {
+    for (const semaforo of semaforos) {
       const dist = car.position.distanceTo(semaforo.position);
       if (dist < 3 && semaforo.userData.state === "red") {
         detener = true;
-      }
-    });
-
-    if (!detener) {
-      if (route.tipo === "horizontal") {
-        car.position.x += speed;
-        if (car.position.x > 50) car.position.x = -50;
-      } else if (route.tipo === "vertical") {
-        car.position.z -= speed;
-        if (car.position.z < -50) car.position.z = 50;
-      } else if (route.tipo === "diagonal") {
-        car.position.x += speed;
-        car.position.z -= speed;
-        if (car.position.x > 50 || car.position.z < -50) {
-          car.position.x = -50 + route.offset;
-          car.position.z = 50 - route.offset;
-        }
+        break;
       }
     }
+
+    if (!detener) {
+      if (ruta.tipo === "horizontal") {
+        body.velocity.set(velocidad * 60, 0, 0);
+        if (body.position.x > 50) body.position.x = -50;
+      } else if (ruta.tipo === "vertical") {
+        body.velocity.set(0, 0, -velocidad * 60);
+        if (body.position.z < -50) body.position.z = 50;
+      } else if (ruta.tipo === "diagonal") {
+        body.velocity.set(velocidad * 60, 0, -velocidad * 60);
+        if (body.position.x > 50 || body.position.z < -50) {
+          body.position.x = -50 + ruta.offset;
+          body.position.z = 50 - ruta.offset;
+        }
+      }
+    } else {
+      body.velocity.set(0, 0, 0);
+    }
+
+    // === Sincronizar Three con Cannon
+    car.position.copy(body.position);
+    car.quaternion.copy(body.quaternion);
   }
 
   renderer.render(scene, camera);
   animationId = requestAnimationFrame(animate);
 }
 
-//------------------Ajustes a base del NLP----------------
+//--------------------------------Reajustes a base del NLP----------------------------
 function ajustarCantidadAutos(cantidad) {
   const { scene } = window.simulation;
-  
-  // Elimina autos existentes
+
+  // Eliminar autos anteriores
   cars.forEach(c => scene.remove(c));
   cars.length = 0;
   carRoutes.length = 0;
   carSpeeds.length = 0;
+
+  // Eliminar cuerpos físicos previos
+  carBodies.forEach(b => world.removeBody(b));
+  carBodies.length = 0;
 
   const carMaterial = new THREE.MeshPhongMaterial({ color: 0xff4444 });
   const rutas = [
@@ -171,27 +206,39 @@ function ajustarCantidadAutos(cantidad) {
   for (let i = 0; i < cantidad; i++) {
     const ruta = rutas[i % rutas.length];
     const car = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 2), carMaterial);
+    let pos = new THREE.Vector3();
 
     if (ruta.tipo === "horizontal") {
-      car.position.set(-50, 0.5, ruta.z);
+      pos.set(-50, 0.5, ruta.z);
     } else if (ruta.tipo === "vertical") {
-      car.position.set(ruta.x, 0.5, 50);
+      pos.set(ruta.x, 0.5, 50);
       car.rotation.y = Math.PI / 2;
     } else if (ruta.tipo === "diagonal") {
-      car.position.set(-50 + ruta.offset, 0.5, 50 - ruta.offset);
+      pos.set(-50 + ruta.offset, 0.5, 50 - ruta.offset);
       car.rotation.y = -Math.PI / 4;
     }
 
+    car.position.copy(pos);
+    scene.add(car);
     cars.push(car);
     carRoutes.push(ruta);
     carSpeeds.push(0.08 + Math.random() * 0.04);
-    scene.add(car);
+
+    const carShape = new CANNON.Box(new CANNON.Vec3(0.5, 0.5, 1));
+    const carBody = new CANNON.Body({
+      mass: 5,
+      shape: carShape,
+      position: new CANNON.Vec3(pos.x, pos.y, pos.z)
+    });
+
+    world.addBody(carBody);
+    carBodies.push(carBody);
   }
 }
 
+
 function ajustarTrafico(nivel) {
   let baseSpeed;
-
   switch (nivel.toLowerCase()) {
     case "bajo":
       baseSpeed = 0.12;
@@ -211,7 +258,7 @@ function ajustarTrafico(nivel) {
   }
 }
 
-//------------------Operaciones basicas----------------
+//--------------------------------Operaciones basicas-------------------------------------------
 function playSim() {
   if (!running) {
     running = true;
@@ -235,19 +282,29 @@ function stopSim() {
 
 function reloadSim() {
   stopSim();
-  for (let i = 0; i < cars.length; i++) {
-    const route = carRoutes[i];
-    if (route.tipo === 'horizontal') cars[i].position.x = -50;
-    else if (route.tipo === 'vertical') cars[i].position.z = 50;
-    else if (route.tipo === 'diagonal') {
-      cars[i].position.x = -50 + route.offset;
-      cars[i].position.z = 50 - route.offset;
+  for (let i = 0; i < carBodies.length; i++) {
+    const body = carBodies[i];
+    const ruta = carRoutes[i];
+
+    if (ruta.tipo === "horizontal") {
+      body.position.set(-50, 0.5, ruta.z);
+    } else if (ruta.tipo === "vertical") {
+      body.position.set(ruta.x, 0.5, 50);
+    } else if (ruta.tipo === "diagonal") {
+      body.position.set(-50 + ruta.offset, 0.5, 50 - ruta.offset);
     }
+
+    // Detener el movimiento
+    body.velocity.set(0, 0, 0);
+    body.angularVelocity.set(0, 0, 0);
   }
+
+  // Forzar render inmediato
   window.simulation.renderer.render(window.simulation.scene, window.simulation.camera);
 }
 
-//----------------Procesamiento de prompt----------------
+
+//----------------------------Procesamiento de prompt-------------------------------------
 async function enviarPrompt() {
   const inputValue = document.getElementById("instruction-input").value;
 
@@ -266,16 +323,6 @@ async function enviarPrompt() {
   else if (accion.includes("reload")) reloadSim();
 }
 
-
-
-
-
-/*
-// Eventos
-document.getElementById("play-button").addEventListener("click", playSim);
-document.getElementById("stop-button").addEventListener("click", stopSim);
-document.getElementById("reload-button").addEventListener("click", reloadSim);
-*/
 
 // Botones del frontend conectados al backend
 document.getElementById("play-button").addEventListener("click", () => {
