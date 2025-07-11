@@ -1,14 +1,17 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
-from LLM_model import generar_respuesta
-from config import Simulacion
-import threading
+import uvicorn, threading, asyncio, json
 
-app = FastAPI()
-sim = Simulacion()
+from LLM_model import generar_respuesta #Modelo openai
+from config import Simulacion #Operaciones basicas
 
-#configuracion del CORS para permitir peticiones (cualquier origen, método y encabezado)
+app = FastAPI() #Api
+sim = Simulacion() #Operaciones
+connected_websockets = [] 
+
+#Configuracion del CORS para permitir peticiones
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -28,7 +31,9 @@ def configurar_simulacion(config: Configuracion):
     sim.set_config(config.numCars, config.trafico)
     return {"status": "Configuración aplicada", "numCars": sim.numCars, "trafico": sim.trafico}
 
-#inicializa la simulación 
+#----------------Control medio botones---------------------------------
+
+#Endpoint que inicializa la simulación 
 @app.get("/start")
 def start():
     if not sim.running:
@@ -38,7 +43,7 @@ def start():
     else:
         return {"status": "La simulación ya está en ejecución"}
 
-#detiene la simulación 
+#Endpoint que detiene la simulación 
 @app.get("/stop")
 def stop():
     if sim.running:
@@ -47,14 +52,14 @@ def stop():
     else:
         return {"status": "No hay simulación activa"}
 
-#reinicia la simulación 
+#Endpoint que reinicia la simulación 
 @app.get("/reload")
 def reload():
     t = threading.Thread(target=sim.reiniciar_simulacion)
     t.start()
     return {"status": "Simulación recargada"}
 
-#consulta el estado de la simulación 
+#Endpoint que consulta el estado de la simulación 
 @app.get("/estado")
 def estado():
     return {
@@ -63,18 +68,16 @@ def estado():
         "trafico": sim.trafico
     }
 
-
-
-#----------------NLP---------------------------------
+#-----------------------NLP------------------------------
 
 #Modelo para recibir un prompt
 class PromptRequest(BaseModel):
     prompt: str              #instruccion 
     max_tokens: int = 150    #limite de tokens 
 
-#interpreta las instrucciones en lenguaje natural 
+#Endpoint que interpreta las instrucciones en lenguaje natural 
 @app.post("/nlp")
-def responder(req: PromptRequest):
+async def responder(req: PromptRequest):
     params = generar_respuesta(req.prompt, req.max_tokens)
 
     #valida si hubo error 
@@ -93,6 +96,13 @@ def responder(req: PromptRequest):
     #aplica la configuracion
     sim.set_config(numCars, trafico)
 
+    await notificar_todos({
+        "accion": accion,
+        "numCars": numCars,
+        "trafico": trafico
+    })
+
+
     #ejecuta la accion 
     if accion == "start":
         if not sim.running:
@@ -104,7 +114,8 @@ def responder(req: PromptRequest):
         t = threading.Thread(target=sim.reiniciar_simulacion)
         t.start()
     else:
-        print(f"Acción desconocida: {accion}")
+        return {"status": f"Acción desconocida: '{accion}'"}
+
 
     #respuesta
     return {
@@ -112,3 +123,41 @@ def responder(req: PromptRequest):
         "numCars": sim.numCars,
         "trafico": sim.trafico
     }
+
+#-----------------------Conexion Websocket------------------------------
+
+#Endpoint que realiza la conexion
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    await websocket.accept()
+    connected_websockets.append(websocket)
+    print("Cliente WebSocket conectado")
+
+    try:
+        while True:
+            text = await websocket.receive_text()
+            print(f"Recibido: {text}")
+            if text.lower() == "start":
+                await notificar_todos({"accion": "start"})
+            elif text.lower() == "stop":
+                await notificar_todos({"accion": "stop"})
+            elif text.lower() == "reload":
+                await notificar_todos({"accion": "reload"})
+            else:
+                await websocket.send_text("Comando no reconocido.")
+    except WebSocketDisconnect:
+        connected_websockets.remove(websocket)
+        print("Cliente desconectado")
+
+# Enviar a todos los clientes conectados
+async def notificar_todos(data: dict):
+    
+    for ws in connected_websockets.copy():
+        try:
+            await ws.send_text(json.dumps(data))
+        except:
+            connected_websockets.remove(ws)
+
+
+# Sirve archivos estáticos HTML + JS debe ir en /static)
+app.mount("/", StaticFiles(directory="static", html=True), name="static")

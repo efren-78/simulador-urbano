@@ -146,7 +146,72 @@ function animate() {
   animationId = requestAnimationFrame(animate);
 }
 
+//------------------Ajustes a base del NLP----------------
+function ajustarCantidadAutos(cantidad) {
+  const { scene } = window.simulation;
+  
+  // Elimina autos existentes
+  cars.forEach(c => scene.remove(c));
+  cars.length = 0;
+  carRoutes.length = 0;
+  carSpeeds.length = 0;
 
+  const carMaterial = new THREE.MeshPhongMaterial({ color: 0xff4444 });
+  const rutas = [
+    { tipo: "horizontal", z: -10 },
+    { tipo: "horizontal", z: 10 },
+    { tipo: "vertical", x: -10 },
+    { tipo: "vertical", x: 10 },
+    { tipo: "diagonal", offset: -30 },
+    { tipo: "diagonal", offset: -10 },
+    { tipo: "diagonal", offset: 10 },
+    { tipo: "diagonal", offset: 30 }
+  ];
+
+  for (let i = 0; i < cantidad; i++) {
+    const ruta = rutas[i % rutas.length];
+    const car = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 2), carMaterial);
+
+    if (ruta.tipo === "horizontal") {
+      car.position.set(-50, 0.5, ruta.z);
+    } else if (ruta.tipo === "vertical") {
+      car.position.set(ruta.x, 0.5, 50);
+      car.rotation.y = Math.PI / 2;
+    } else if (ruta.tipo === "diagonal") {
+      car.position.set(-50 + ruta.offset, 0.5, 50 - ruta.offset);
+      car.rotation.y = -Math.PI / 4;
+    }
+
+    cars.push(car);
+    carRoutes.push(ruta);
+    carSpeeds.push(0.08 + Math.random() * 0.04);
+    scene.add(car);
+  }
+}
+
+function ajustarTrafico(nivel) {
+  let baseSpeed;
+
+  switch (nivel.toLowerCase()) {
+    case "bajo":
+      baseSpeed = 0.12;
+      break;
+    case "moderado":
+      baseSpeed = 0.08;
+      break;
+    case "alto":
+      baseSpeed = 0.04;
+      break;
+    default:
+      baseSpeed = 0.08;
+  }
+
+  for (let i = 0; i < carSpeeds.length; i++) {
+    carSpeeds[i] = baseSpeed + Math.random() * 0.02;
+  }
+}
+
+//------------------Operaciones basicas----------------
 function playSim() {
   if (!running) {
     running = true;
@@ -182,6 +247,7 @@ function reloadSim() {
   window.simulation.renderer.render(window.simulation.scene, window.simulation.camera);
 }
 
+//----------------Procesamiento de prompt----------------
 async function enviarPrompt() {
   const inputValue = document.getElementById("instruction-input").value;
 
@@ -193,7 +259,13 @@ async function enviarPrompt() {
 
   const data = await response.json();
   console.log("Respuesta backend NLP:", data);
+
+  const accion = data.status.toLowerCase();
+  if (accion.includes("start")) playSim();
+  else if (accion.includes("stop")) stopSim();
+  else if (accion.includes("reload")) reloadSim();
 }
+
 
 
 
@@ -257,4 +329,30 @@ if (!numCars || !trafico) {
   })
   .then(res => res.json())
   .then(data => console.log("Cnfiguracion enviada", data));
+}
+
+
+const socket = new WebSocket("ws://localhost:8000/ws");
+
+socket.onmessage = function(event) {
+  const msg = JSON.parse(event.data);
+  console.log("Mensaje WebSocket:", msg);
+
+  if (msg.numCars) {
+    ajustarCantidadAutos(msg.numCars);
+  }
+
+  if (msg.trafico) {
+    ajustarTrafico(msg.trafico);
+  }
+
+  if (msg.accion === "start") playSim();
+  else if (msg.accion === "stop") stopSim();
+  else if (msg.accion === "reload") reloadSim();
+};
+
+
+function enviarComando() {
+  const input = document.getElementById("input").value;
+  socket.send(input.trim().toLowerCase());
 }
