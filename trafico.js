@@ -33,6 +33,10 @@ function init() {
   const renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
   renderer.setSize(canvas.clientWidth, canvas.clientHeight);
 
+  // Fondo y niebla
+  scene.background = new THREE.Color(0xa0a0a0);
+  scene.fog = new THREE.Fog(0xa0a0a0, 50, 200);
+
   // Luz
   const light = new THREE.DirectionalLight(0xffffff, 1);
   light.position.set(20, 40, 20);
@@ -55,9 +59,11 @@ function init() {
   crearSemaforo(scene, { x: 0, z: 0 }, "green");
   crearSemaforo(scene, { x: 10, z: -10 }, "red");
 
-  // Autos
-  const carMaterial = new THREE.MeshPhongMaterial({ color: 0xff4444 });
+  // Leer configuración desde localStorage
+  const numCars = parseInt(localStorage.getItem("config_numCars")) || 10;
+  const trafico = localStorage.getItem("config_trafico") || "moderado";
 
+  // Rutas posibles
   const rutas = [
     { tipo: "horizontal", z: -10 },
     { tipo: "horizontal", z: 10 },
@@ -69,7 +75,29 @@ function init() {
     { tipo: "diagonal", offset: 30 }
   ];
 
-  rutas.forEach(ruta => {
+  // Escalar velocidad según condición de tráfico
+  let velocidadBase;
+  switch (trafico) {
+    case "fluido":
+      velocidadBase = 0.1;
+      break;
+    case "moderado":
+      velocidadBase = 0.06;
+      break;
+    case "congestionado":
+      velocidadBase = 0.03;
+      break;
+    default:
+      velocidadBase = 0.06;
+  }
+
+  // Autos
+  const colores = [0xff4444, 0x44ff44, 0x4488ff, 0xffff44];
+
+  for (let i = 0; i < numCars; i++) {
+    const ruta = rutas[i % rutas.length];
+    const color = colores[i % colores.length];
+    const carMaterial = new THREE.MeshPhongMaterial({ color });
     const car = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 2), carMaterial);
 
     if (ruta.tipo === "horizontal") {
@@ -84,14 +112,26 @@ function init() {
 
     cars.push(car);
     carRoutes.push(ruta);
-    carSpeeds.push(0.08 + Math.random() * 0.04);
+    carSpeeds.push(velocidadBase + Math.random() * 0.02);
     scene.add(car);
-  });
+  }
 
-  camera.position.set(0, 50, 50);
+  // Guardar en window para uso global
+  window.simulation = { scene, camera, renderer };
+
+  // Ajuste de cámara
+  camera.position.set(0, 100, 100);
   camera.lookAt(0, 0, 0);
 
-  window.simulation = { scene, camera, renderer };
+  // Responder a cambios de tamaño
+  window.addEventListener("resize", () => {
+    const canvas = renderer.domElement;
+    camera.aspect = canvas.clientWidth / canvas.clientHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+  });
+
+  renderer.render(scene, camera);
 }
 
 function animate() {
@@ -99,7 +139,7 @@ function animate() {
 
   const { scene, camera, renderer } = window.simulation;
 
-  // Semáforos (cada 5 segundos cambia de estado)
+  // Ciclo de semáforos
   const time = performance.now() * 0.001;
   const cycle = Math.floor(time) % 10 < 5 ? "green" : "red";
 
@@ -177,4 +217,5 @@ document.getElementById("play-button").addEventListener("click", playSim);
 document.getElementById("stop-button").addEventListener("click", stopSim);
 document.getElementById("reload-button").addEventListener("click", reloadSim);
 
+// Iniciar
 init();
