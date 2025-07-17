@@ -258,6 +258,13 @@ function ajustarTrafico(nivel) {
   }
 }
 
+function cambiarSemaforo(estado) {
+  semaforos.forEach(semaforo => {
+    semaforo.material.color.setHex(estado === "green" ? 0x00ff00 : 0xff0000);
+    semaforo.userData.state = estado;
+  });
+}
+
 //--------------------------------Operaciones basicas-------------------------------------------
 function playSim() {
   if (!running) {
@@ -265,14 +272,6 @@ function playSim() {
     animate();
   }
 }
-
-fetch("http://localhost:8000/start")
-  .then(res => res.json())
-  .then(data => {
-    if (data.status === "Simulación iniciada") {
-      playSim();  // Activar la animación en el navegador
-    }
-  });
 
 
 function stopSim() {
@@ -352,6 +351,34 @@ document.getElementById("reload-button").addEventListener("click", () => {
     });
 });
 
+//Accion para cambiar a semaforo verde
+document.getElementById("green-button").addEventListener("click", () => {
+  fetch("http://localhost:8000/semaforo?estado=verde", {
+    method: "POST"
+  })
+    .then(res => res.json())
+    .then(data => {
+      console.log("Semáforo cambiado a verde:", data.status);
+      document.getElementById("green-button").classList.add("active");
+      document.getElementById("red-button").classList.remove("active");
+    })
+    .catch(err => console.error("Error cambiando a verde:", err));
+});
+
+
+//Accion para cambiar a semaforo rojo
+document.getElementById("red-button").addEventListener("click", () => {
+  fetch("http://localhost:8000/semaforo?estado=rojo", {
+    method: "POST"
+  })
+    .then(res => res.json())
+    .then(data => {
+      console.log("Semáforo cambiado a rojo:", data.status);
+      document.getElementById("red-button").classList.add("active");
+      document.getElementById("green-button").classList.remove("active");
+    })
+    .catch(err => console.error("Error cambiando a rojo:", err));
+});
 
 document.getElementById("send-button").addEventListener("click", enviarPrompt);
 

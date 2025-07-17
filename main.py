@@ -2,7 +2,7 @@ from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
-import uvicorn, threading, asyncio, json
+import uvicorn, threading, asyncio, json, logging
 
 from LLM_model import generar_respuesta #Modelo openai
 from config import Simulacion #Operaciones basicas
@@ -10,6 +10,8 @@ from config import Simulacion #Operaciones basicas
 app = FastAPI() #Api
 sim = Simulacion() #Operaciones
 connected_websockets = [] 
+
+estado_semaforo = "rojo"  # Estado inicial
 
 #Configuracion del CORS para permitir peticiones
 app.add_middleware(
@@ -31,7 +33,7 @@ def configurar_simulacion(config: Configuracion):
     sim.set_config(config.numCars, config.trafico)
     return {"status": "Configuración aplicada", "numCars": sim.numCars, "trafico": sim.trafico}
 
-#----------------Control medio botones---------------------------------
+#----------------Botones basicos---------------------------------
 
 #Endpoint que inicializa la simulación 
 @app.get("/start")
@@ -67,6 +69,20 @@ def estado():
         "numCars": sim.numCars,
         "trafico": sim.trafico
     }
+
+#----------------Botones extras---------------------------------
+
+@app.post("/semaforo")
+def cambiar_semaforo(estado: str):
+    global estado_semaforo
+    if estado in ["verde", "rojo"]:
+        estado_semaforo = estado
+        return {"status": f"Semáforo cambiado a {estado}"}
+    return {"error": "Estado inválido"}
+
+@app.get("/estado_semaforo")
+def obtener_estado():
+    return {"estado": estado_semaforo}
 
 #-----------------------NLP------------------------------
 
@@ -131,23 +147,61 @@ async def responder(req: PromptRequest):
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
     connected_websockets.append(websocket)
-    print("Cliente WebSocket conectado")
+    logging.info("Cliente WebSocket conectado")
 
     try:
         while True:
             text = await websocket.receive_text()
-            print(f"Recibido: {text}")
-            if text.lower() == "start":
-                await notificar_todos({"accion": "start"})
-            elif text.lower() == "stop":
-                await notificar_todos({"accion": "stop"})
-            elif text.lower() == "reload":
-                await notificar_todos({"accion": "reload"})
-            else:
-                await websocket.send_text("Comando no reconocido.")
+            logging.info(f"Comando recibido: {text}")
+
+            try:
+                # Si viene JSON, interpretamos los parámetros
+                data = json.loads(text)
+                accion = data.get("accion", "").lower()
+                numCars = data.get("numCars")
+                trafico = data.get("trafico")
+
+                # Aplicar configuración si corresponde
+                if numCars:
+                    sim.set_config(numCars, sim.trafico)
+                if trafico:
+                    sim.set_config(sim.numCars, trafico)
+
+                # Ejecutar acción
+                if accion in ["start", "stop", "reload"]:
+                    await notificar_todos(data)
+                    if accion == "start" and not sim.running:
+                        t = threading.Thread(target=sim.iniciar_simulacion)
+                        t.start()
+                    elif accion == "stop":
+                        sim.detener_simulacion()
+                    elif accion == "reload":
+                        t = threading.Thread(target=sim.reiniciar_simulacion)
+                        t.start()
+                elif accion == "ajustar":
+                    await notificar_todos({"accion": "ajustar", "numCars": numCars, "trafico": trafico})
+                else:
+                    await websocket.send_text(json.dumps({"error": f"Acción desconocida: {accion}"}))
+
+            except json.JSONDecodeError:
+                # Si no es JSON, interpretar como texto simple
+                cmd = text.lower()
+                if cmd in ["start", "stop", "reload"]:
+                    await notificar_todos({"accion": cmd})
+                    if cmd == "start" and not sim.running:
+                        t = threading.Thread(target=sim.iniciar_simulacion)
+                        t.start()
+                    elif cmd == "stop":
+                        sim.detener_simulacion()
+                    elif cmd == "reload":
+                        t = threading.Thread(target=sim.reiniciar_simulacion)
+                        t.start()
+                else:
+                    await websocket.send_text(json.dumps({"error": "Formato no válido. Usa JSON o comando básico."}))
+
     except WebSocketDisconnect:
         connected_websockets.remove(websocket)
-        print("Cliente desconectado")
+        logging.info("Cliente desconectado")
 
 # Enviar a todos los clientes conectados
 async def notificar_todos(data: dict):

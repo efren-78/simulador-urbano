@@ -201,7 +201,7 @@ body {
 
 #mic-button, #send-button, 
 #play-button, #stop-button, 
-#reload-button {
+#reload-button, #green-button, #red-button {
   background: linear-gradient(to right, #1e2e4a, #2c4063);
   border: 1px solid rgba(255,255,255,0.08);
   padding: 10px;
@@ -218,7 +218,8 @@ body {
 
 #mic-button:hover, #send-button:hover, 
 #play-button:hover, #stop-button:hover, 
-#reload-button:hover {
+#reload-button:hover, #green-button:hover,
+#red-button:hover {
   background: linear-gradient(to right, #2c4063, #3e5780);
   transform: translateY(-3px);
   box-shadow: 0 10px 18px rgba(0, 0, 0, 0.25);
@@ -226,17 +227,31 @@ body {
 
 #mic-button:active, #send-button:active, 
 #play-button:active, #stop-button:active, 
-#reload-button:active {
+#reload-button:active, #green-button, #red-button:active {
   transform: scale(0.95);
 }
 
 #mic-button img, #send-button img, 
 #play-button img, #stop-button img, 
-#reload-button img {
+#reload-button img, #green-button img,
+#red-button img {
   width: 24px;
   height: 24px;
   object-fit: contain;
   transition: all 0.3s;
+}
+
+/* Estado activo de los botones semáforo */
+#green-button.active {
+  background: linear-gradient(to right, #2ecc71, #27ae60);
+  box-shadow: 0 0 15px rgba(46, 204, 113, 0.8);
+  transform: scale(1.1);
+}
+
+#red-button.active {
+  background: linear-gradient(to right, #e74c3c, #c0392b);
+  box-shadow: 0 0 15px rgba(231, 76, 60, 0.8);
+  transform: scale(1.1);
 }
 
 /* === CANVAS Y FOOTER === */
