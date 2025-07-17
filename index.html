@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Coche 3D con Movimiento Realista</title>
+    <style> body { margin: 0; overflow: hidden; } canvas { display: block; } </style>
+</head>
+<body>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/controls/OrbitControls.js"></script>
+    <script>
+        // 1. Configuración inicial
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x87CEEB);
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        document.body.appendChild(renderer.domElement);
+
+        // 2. Iluminación
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+        scene.add(ambientLight);
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        directionalLight.position.set(5, 10, 7);
+        directionalLight.castShadow = true;
+        scene.add(directionalLight);
+
+        // 3. Suelo (con textura opcional)
+        const ground = new THREE.Mesh(
+            new THREE.PlaneGeometry(100, 100),
+            new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.8 })
+        );
+        ground.rotation.x = -Math.PI / 2;
+        ground.receiveShadow = true;
+        scene.add(ground);
+
+        // 4. Variables de control del coche
+        let carModel;
+        const carSpeed = 0.2;
+        const rotationSpeed = 0.05;
+        const keysPressed = {};
+
+        // 5. Cargar el modelo del coche
+        const loader = new THREE.GLTFLoader();
+        loader.load(
+            'models/carro.glb',
+            (gltf) => {
+                carModel = gltf.scene;
+                carModel.traverse((child) => {
+                    if (child.isMesh) {
+                        child.castShadow = true;
+                    }
+                });
+                // Ajustar posición y escala si es necesario
+                carModel.position.set(0, 0, 0);
+                carModel.scale.set(1, 1, 1);
+                scene.add(carModel);
+
+                // Opcional: Rotar el modelo si está en la orientación incorrecta
+                carModel.rotation.y = Math.PI; // Ajusta según necesidad
+            },
+            undefined,
+            (error) => console.error("Error al cargar el modelo:", error)
+        );
+
+        // 6. Posicionar cámara detrás del coche (en modo tercera persona)
+        camera.position.set(0, 5, -10);
+        camera.lookAt(0, 0, 0);
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enabled = false; // Desactivamos OrbitControls para usar nuestros controles
+
+        // 7. Detectar teclas presionadas
+        document.addEventListener('keydown', (event) => {
+            keysPressed[event.key] = true;
+        });
+        document.addEventListener('keyup', (event) => {
+            keysPressed[event.key] = false;
+        });
+
+        // 8. Función de animación y movimiento
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Mover el coche si el modelo está cargado
+            if (carModel) {
+                // Adelante/Atrás (W/S o Flechas ↑/↓)
+                if (keysPressed['w'] || keysPressed['ArrowUp']) {
+                    carModel.translateZ(-carSpeed);
+                }
+                if (keysPressed['s'] || keysPressed['ArrowDown']) {
+                    carModel.translateZ(carSpeed);
+                }
+
+                // Rotación (A/D o Flechas ←/→)
+                if (keysPressed['a'] || keysPressed['ArrowLeft']) {
+                    carModel.rotation.y += rotationSpeed;
+                }
+                if (keysPressed['d'] || keysPressed['ArrowRight']) {
+                    carModel.rotation.y -= rotationSpeed;
+                }
+
+                // Mover la cámara con el coche (modo tercera persona)
+                camera.position.x = carModel.position.x;
+                camera.position.z = carModel.position.z + 10;
+                camera.lookAt(carModel.position);
+            }
+
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // 9. Ajustar ventana al redimensionar
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
