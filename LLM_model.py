@@ -15,14 +15,15 @@ def generar_respuesta(prompt: str, max_tokens: int = 150) -> dict:
     """
     Genera respuesta NLP para la simulación de tráfico.
     Devuelve SIEMPRE un diccionario con:
-    {"accion": str, "numCars": int, "trafico": str}
+    {"accion": str, "numCars": int, "trafico": str, "semaforo": str | None}
     """
 
     # Valores por defecto
     respuesta_fallback = {
         "accion": "none",
         "numCars": 10,
-        "trafico": "moderado"
+        "trafico": "moderado",
+        "semaforo": None
     }
 
     try:
@@ -35,10 +36,11 @@ def generar_respuesta(prompt: str, max_tokens: int = 150) -> dict:
                         "Eres un asistente para un simulador de tráfico urbano. "
                         "Tu única tarea es interpretar instrucciones del usuario "
                         "y devolver SIEMPRE un JSON puro y válido, sin ningún bloque ```json "
-                        "ni texto adicional. El JSON algunas veces tendra palabras claves: "
-                        "\"accion\" (uno de: \"start\", \"stop\", \"reload\"), "
-                        "\"numCars\" (entero) y \"trafico\" (\"alto\", \"moderado\" o \"fluido\"). "
-                        "Si el usuario no especifica \"numCars\" o \"trafico\", usa 10 y \"moderado\". "
+                        "ni texto adicional. El JSON debe incluir: "
+                        "\"accion\" (uno de: \"start\", \"stop\", \"reload\", \"none\"), "
+                        "\"numCars\" (entero), \"trafico\" (\"alto\", \"moderado\" o \"bajo\"), "
+                        "y opcionalmente \"semaforo\" (\"verde\", \"rojo\", \"amarillo\"). "
+                        "Si el usuario no especifica valores, usa: accion=\"none\", numCars=10, trafico=\"moderado\". "
                         "No devuelvas explicaciones, solo el JSON en una línea."
                     )
                 },
@@ -46,7 +48,7 @@ def generar_respuesta(prompt: str, max_tokens: int = 150) -> dict:
             ],
             max_tokens=max_tokens,
             temperature=0.1,
-            timeout=10  # Timeout en segundos
+            timeout=10
         )
 
         raw_content = response.choices[0].message.content.strip()
@@ -65,13 +67,8 @@ def generar_respuesta(prompt: str, max_tokens: int = 150) -> dict:
             return respuesta_fallback
 
         # Validación básica
-        if "accion" not in params:
-            logging.warning("El JSON no contiene 'accion'. Usando fallback.")
-            return respuesta_fallback
-
-        # Normaliza valores
         accion = str(params.get("accion", "none")).lower()
-        if accion not in ["start", "stop", "reload"]:
+        if accion not in ["start", "stop", "reload", "none"]:
             accion = "none"
 
         try:
@@ -83,10 +80,17 @@ def generar_respuesta(prompt: str, max_tokens: int = 150) -> dict:
         if trafico not in ["alto", "moderado", "bajo"]:
             trafico = "moderado"
 
+        semaforo = params.get("semaforo", None)
+        if semaforo:
+            semaforo = semaforo.lower()
+            if semaforo not in ["verde", "rojo", "amarillo"]:
+                semaforo = None
+
         return {
             "accion": accion,
             "numCars": numCars,
-            "trafico": trafico
+            "trafico": trafico,
+            "semaforo": semaforo
         }
 
     except Exception as e:

@@ -73,12 +73,14 @@ def estado():
 #----------------Botones extras---------------------------------
 
 @app.post("/semaforo")
-def cambiar_semaforo(estado: str):
+async def cambiar_semaforo(estado: str):
     global estado_semaforo
     if estado in ["verde", "rojo"]:
         estado_semaforo = estado
+        await notificar_todos({"accion": "cambiar_semaforo", "estado": estado})
         return {"status": f"Semáforo cambiado a {estado}"}
     return {"error": "Estado inválido"}
+
 
 @app.get("/estado_semaforo")
 def obtener_estado():
@@ -96,49 +98,51 @@ class PromptRequest(BaseModel):
 async def responder(req: PromptRequest):
     params = generar_respuesta(req.prompt, req.max_tokens)
 
-    #valida si hubo error 
     if "error" in params:
         raise HTTPException(status_code=422, detail=params["content"])
 
-    #validar y extraer valores
-    try:
-        numCars = int(params.get("numCars", 10))  #valor por defecto 10
-    except ValueError:
-        raise HTTPException(status_code=400, detail="numCars no es un número válido.")
+    accion = params.get("accion", "none")
+    numCars = params.get("numCars", 10)
+    trafico = params.get("trafico", "moderado")
+    semaforo = params.get("semaforo", None)
 
-    trafico = params.get("trafico", "moderado") #valor por defecto moderado 
-    accion = str(params.get("accion", "")).strip().lower().replace('"', '').replace("'", '')
-
-    #aplica la configuracion
     sim.set_config(numCars, trafico)
 
+    # Notificación global
     await notificar_todos({
         "accion": accion,
         "numCars": numCars,
         "trafico": trafico
     })
 
-
-    #ejecuta la accion 
-    if accion == "start":
-        if not sim.running:
-            t = threading.Thread(target=sim.iniciar_simulacion)
-            t.start()
+    # Ejecutar acción
+    if accion == "start" and not sim.running:
+        t = threading.Thread(target=sim.iniciar_simulacion)
+        t.start()
     elif accion == "stop":
         sim.detener_simulacion()
     elif accion == "reload":
         t = threading.Thread(target=sim.reiniciar_simulacion)
         t.start()
-    else:
-        return {"status": f"Acción desconocida: '{accion}'"}
 
+    # Si hay cambio de semáforo → Notificar con formato correcto
+    global estado_semaforo
+    if semaforo:
+        estado_semaforo = semaforo
+        await notificar_todos({
+            "accion": "cambiar_semaforo",
+            "estado": estado_semaforo
+        })
+        logging.info(f"Semáforo cambiado a: {estado_semaforo}")
 
-    #respuesta
     return {
         "status": f"Acción '{accion}' ejecutada",
         "numCars": sim.numCars,
-        "trafico": sim.trafico
+        "trafico": sim.trafico,
+        "semaforo": estado_semaforo
     }
+
+
 
 #-----------------------Conexion Websocket------------------------------
 

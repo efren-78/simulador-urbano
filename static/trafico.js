@@ -8,6 +8,8 @@ const semaforos = [];
 const carBodies = [];
 let world;
 
+let estadoSemaforoActual = "red";
+
 function crearCalleLarga(scene, width, length, rotationY = 0, position = { x: 0, z: 0 }) {
   const geometry = new THREE.PlaneGeometry(width, length);
   const material = new THREE.MeshPhongMaterial({ color: 0x2c2c2c });
@@ -121,7 +123,7 @@ function animate() {
   const { scene, camera, renderer } = window.simulation;
 
   // === Actualizar semáforos
-  const time = performance.now() * 0.001;
+  /*const time = performance.now() * 0.001;
   const ciclo = Math.floor(time) % 10 < 5 ? "green" : "red";
 
   semaforos.forEach(semaforo => {
@@ -130,7 +132,7 @@ function animate() {
       semaforo.material.color.setHex(colorDeseado);
       semaforo.userData.state = ciclo;
     }
-  });
+  });*/
 
   // === Avanzar física
   world.step(1 / 60);
@@ -259,11 +261,13 @@ function ajustarTrafico(nivel) {
 }
 
 function cambiarSemaforo(estado) {
+  estadoSemaforoActual = estado;
   semaforos.forEach(semaforo => {
     semaforo.material.color.setHex(estado === "green" ? 0x00ff00 : 0xff0000);
     semaforo.userData.state = estado;
   });
 }
+
 
 //--------------------------------Operaciones basicas-------------------------------------------
 function playSim() {
@@ -351,34 +355,30 @@ document.getElementById("reload-button").addEventListener("click", () => {
     });
 });
 
-//Accion para cambiar a semaforo verde
+// Cambiar a verde
 document.getElementById("green-button").addEventListener("click", () => {
-  fetch("http://localhost:8000/semaforo?estado=verde", {
-    method: "POST"
-  })
+  fetch("http://localhost:8000/semaforo?estado=verde", { method: "POST" })
     .then(res => res.json())
     .then(data => {
       console.log("Semáforo cambiado a verde:", data.status);
+      cambiarSemaforo("green"); // Actualiza la escena
       document.getElementById("green-button").classList.add("active");
       document.getElementById("red-button").classList.remove("active");
-    })
-    .catch(err => console.error("Error cambiando a verde:", err));
+    });
 });
 
-
-//Accion para cambiar a semaforo rojo
+// Cambiar a rojo
 document.getElementById("red-button").addEventListener("click", () => {
-  fetch("http://localhost:8000/semaforo?estado=rojo", {
-    method: "POST"
-  })
+  fetch("http://localhost:8000/semaforo?estado=rojo", { method: "POST" })
     .then(res => res.json())
     .then(data => {
       console.log("Semáforo cambiado a rojo:", data.status);
+      cambiarSemaforo("red"); // Actualiza la escena
       document.getElementById("red-button").classList.add("active");
       document.getElementById("green-button").classList.remove("active");
-    })
-    .catch(err => console.error("Error cambiando a rojo:", err));
+    });
 });
+
 
 document.getElementById("send-button").addEventListener("click", enviarPrompt);
 
@@ -412,18 +412,35 @@ socket.onmessage = function(event) {
   const msg = JSON.parse(event.data);
   console.log("Mensaje WebSocket:", msg);
 
+  // Ajustar número de autos
   if (msg.numCars) {
     ajustarCantidadAutos(msg.numCars);
   }
 
+  // Ajustar tráfico
   if (msg.trafico) {
     ajustarTrafico(msg.trafico);
   }
 
+  // Control de simulación
   if (msg.accion === "start") playSim();
   else if (msg.accion === "stop") stopSim();
   else if (msg.accion === "reload") reloadSim();
+
+  // Control de semáforos
+  if (msg.accion === "cambiar_semaforo" && msg.estado) {
+    cambiarSemaforo(msg.estado); // Actualiza la escena 3D
+    if (msg.estado === "verde") {
+      document.getElementById("green-button").classList.add("active");
+      document.getElementById("red-button").classList.remove("active");
+    } else if (msg.estado === "rojo") {
+      document.getElementById("red-button").classList.add("active");
+      document.getElementById("green-button").classList.remove("active");
+    }
+  }
+
 };
+
 
 
 function enviarComando() {
