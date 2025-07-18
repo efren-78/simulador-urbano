@@ -146,11 +146,17 @@ function animate() {
     let detener = false;
     for (const semaforo of semaforos) {
       const dist = car.position.distanceTo(semaforo.position);
-      if (dist < 3 && semaforo.userData.state === "red") {
-        detener = true;
+      if (dist < 3) {
+        if (semaforo.userData.state === "red") {
+          detener = true;
+        } else if (semaforo.userData.state === "amarillo") {
+          // Reducir velocidad en amarillo
+          body.velocity.scale(0.5, body.velocity);
+        }
         break;
       }
     }
+
 
     if (!detener) {
       if (ruta.tipo === "horizontal") {
@@ -248,6 +254,9 @@ function ajustarTrafico(nivel) {
     case "moderado":
       baseSpeed = 0.08;
       break;
+    case "lento":
+      baseSpeed = 0.06;
+      break;
     case "alto":
       baseSpeed = 0.04;
       break;
@@ -260,13 +269,21 @@ function ajustarTrafico(nivel) {
   }
 }
 
+
 function cambiarSemaforo(estado) {
   estadoSemaforoActual = estado;
+
+  let color;
+  if (estado === "verde") color = 0x00ff00;
+  else if (estado === "rojo") color = 0xff0000;
+  else if (estado === "amarillo") color = 0xffff00; // Amarillo
+
   semaforos.forEach(semaforo => {
-    semaforo.material.color.setHex(estado === "green" ? 0x00ff00 : 0xff0000);
+    semaforo.material.color.setHex(color);
     semaforo.userData.state = estado;
   });
 }
+
 
 
 //--------------------------------Operaciones basicas-------------------------------------------
@@ -361,8 +378,22 @@ document.getElementById("green-button").addEventListener("click", () => {
     .then(res => res.json())
     .then(data => {
       console.log("Semáforo cambiado a verde:", data.status);
-      cambiarSemaforo("green"); // Actualiza la escena
+      cambiarSemaforo("verde"); // Actualiza la escena
       document.getElementById("green-button").classList.add("active");
+      document.getElementById("red-button").classList.remove("active");
+      document.getElementById("yellow-button").classList.remove("active");
+    });
+});
+
+//Cambiar a amarillo
+document.getElementById("yellow-button").addEventListener("click", () => {
+  fetch("http://localhost:8000/semaforo?estado=amarillo", { method: "POST" })
+    .then(res => res.json())
+    .then(data => {
+      console.log("Semáforo cambiado a amarillo:", data.status);
+      cambiarSemaforo("amarillo"); // Actualiza la escena
+      document.getElementById("yellow-button").classList.add("active");
+      document.getElementById("green-button").classList.remove("active");
       document.getElementById("red-button").classList.remove("active");
     });
 });
@@ -373,9 +404,10 @@ document.getElementById("red-button").addEventListener("click", () => {
     .then(res => res.json())
     .then(data => {
       console.log("Semáforo cambiado a rojo:", data.status);
-      cambiarSemaforo("red"); // Actualiza la escena
+      cambiarSemaforo("rojo"); // Actualiza la escena
       document.getElementById("red-button").classList.add("active");
       document.getElementById("green-button").classList.remove("active");
+      document.getElementById("yellow-button").classList.remove("active");
     });
 });
 
@@ -430,11 +462,17 @@ socket.onmessage = function(event) {
   // Control de semáforos
   if (msg.accion === "cambiar_semaforo" && msg.estado) {
     cambiarSemaforo(msg.estado); // Actualiza la escena 3D
-    if (msg.estado === "verde") {
+    if (msg.estado == "verde") {
       document.getElementById("green-button").classList.add("active");
+      document.getElementById("yellow-button").classList.remove("active");
       document.getElementById("red-button").classList.remove("active");
-    } else if (msg.estado === "rojo") {
+    } else if (msg.estado == "rojo") {
       document.getElementById("red-button").classList.add("active");
+      document.getElementById("yellow-button").classList.remove("active");
+      document.getElementById("green-button").classList.remove("active");
+    } else if(msg.estado == "amarillo"){
+      document.getElementById("yellow-button").classList.add("active");
+      document.getElementById("red-button").classList.remove("active");
       document.getElementById("green-button").classList.remove("active");
     }
   }

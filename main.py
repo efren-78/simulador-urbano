@@ -75,7 +75,7 @@ def estado():
 @app.post("/semaforo")
 async def cambiar_semaforo(estado: str):
     global estado_semaforo
-    if estado in ["verde", "rojo"]:
+    if estado in ["verde", "amarillo", "rojo"]:
         estado_semaforo = estado
         await notificar_todos({"accion": "cambiar_semaforo", "estado": estado})
         return {"status": f"Semáforo cambiado a {estado}"}

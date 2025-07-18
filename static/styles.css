@@ -201,7 +201,8 @@ body {
 
 #mic-button, #send-button, 
 #play-button, #stop-button, 
-#reload-button, #green-button, #red-button {
+#reload-button, #green-button, 
+#red-button, #yellow-button {
   background: linear-gradient(to right, #1e2e4a, #2c4063);
   border: 1px solid rgba(255,255,255,0.08);
   padding: 10px;
@@ -219,7 +220,7 @@ body {
 #mic-button:hover, #send-button:hover, 
 #play-button:hover, #stop-button:hover, 
 #reload-button:hover, #green-button:hover,
-#red-button:hover {
+#red-button:hover, #yellow-button:hover {
   background: linear-gradient(to right, #2c4063, #3e5780);
   transform: translateY(-3px);
   box-shadow: 0 10px 18px rgba(0, 0, 0, 0.25);
@@ -227,14 +228,15 @@ body {
 
 #mic-button:active, #send-button:active, 
 #play-button:active, #stop-button:active, 
-#reload-button:active, #green-button, #red-button:active {
+#reload-button:active, #green-button:active, 
+#red-button:active, #yellow-button:active {
   transform: scale(0.95);
 }
 
 #mic-button img, #send-button img, 
 #play-button img, #stop-button img, 
 #reload-button img, #green-button img,
-#red-button img {
+#red-button img, #yellow-button img {
   width: 24px;
   height: 24px;
   object-fit: contain;
@@ -247,6 +249,13 @@ body {
   box-shadow: 0 0 15px rgba(46, 204, 113, 0.8);
   transform: scale(1.1);
 }
+
+#yellow-button.active {
+  background: linear-gradient(to right, #f1c40f, #f39c12);
+  box-shadow: 0 0 15px rgba(241, 196, 15, 0.8);
+  transform: scale(1.1);
+}
+
 
 #red-button.active {
   background: linear-gradient(to right, #e74c3c, #c0392b);

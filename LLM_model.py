@@ -83,7 +83,7 @@ def generar_respuesta(prompt: str, max_tokens: int = 150) -> dict:
         semaforo = params.get("semaforo", None)
         if semaforo:
             semaforo = semaforo.lower()
-            if semaforo not in ["verde", "rojo", "amarillo"]:
+            if semaforo not in ["verde", "amarillo", "rojo"]:
                 semaforo = None
 
         return {
