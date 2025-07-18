@@ -86,6 +86,17 @@
       </div>
 
       <canvas id="mapaCanvas" width="800" height="600"></canvas>
+      <div class="semaforo-overlay">
+        <div class="semaforo-poste-container">
+        <div class=" semaforo">
+    <button class="luces-circulo red" color="red" aria-label="Semáforo rojo"></button>
+    <button class="luces-circulo" color="yellow" aria-label="Semáforo amarillo"></button>
+    <button class="luces-circulo" color="green" aria-label="Semáforo verde"></button>
+      </div>  
+      <div class="poste"></div>
+</div>
+    </div>
+    <script src="script.js"></script>
 
       <footer id="bottom-info">
         <p><strong>Zona Seleccionada:</strong></p>
@@ -93,7 +104,7 @@
       </footer>
     </main>
   </div>
-
+</div>
   <script>
     // Función para reconocimiento de voz
     const micBtn = document.getElementById("mic-button");
@@ -123,6 +134,5 @@
   </script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
 <script src="trafico.js"></script>
-
 </body>
 </html>
