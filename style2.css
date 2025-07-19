@@ -1,0 +1,196 @@
+  /*Estilos Index2*/
+    :root {
+      --accent-blue-light:    #22304b;
+      --accent-blue-mid:      #182238;
+      --accent-blue-dark:     #101829;
+      --accent-blue-intense:  #5ea6ff;
+      --accent-gradient: linear-gradient(135deg, #22304b 10%, #182238 55%, #101829 100%);
+      --accent-gradient-solid: linear-gradient(90deg, #22304b 20%, #182238 90%);
+      --accent-gradient-135: linear-gradient(135deg, #22304b 10%, #5ea6ff 100%);
+      --accent-start: #182238;
+      --accent-end:   #22304b;
+      --txt-light:    #ffffff;
+      --txt-muted:    #b7cafc;
+      --glass:        rgba(24, 36, 77, 0.18);
+    }
+    body {
+      min-height: 100vh;
+      background: var(--accent-gradient-135);
+      color: var(--txt-light);
+      font-family: 'Segoe UI', 'Inter', Arial, sans-serif;
+      overflow: hidden;
+      position: relative;
+    }
+    .background-img {
+      position: absolute;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      object-fit: cover;
+      z-index: 0;
+      pointer-events: none;
+    }
+    .dashboard-center {
+      position: relative;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2;
+    }
+    .glass-panel {
+      background: linear-gradient(120deg, rgba(24,36,77,0.93) 30%, rgba(34,48,75,0.95) 100%);
+      backdrop-filter: blur(18px) saturate(130%);
+      border-radius: 2.5rem;
+      box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.25), 0 1.5px 2.5px 0 rgba(94, 166, 255, 0.10);
+      border: 1.5px solid rgba(255,255,255,0.12);
+      color: var(--txt-light);
+      width: 100%;
+      max-width: 560px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 26px;
+      padding: 56px 48px 48px 48px;
+      transition: box-shadow 0.26s;
+    }
+    .glass-panel h1 {
+      color: var(--txt-light);
+      font-size: 2.7rem;
+      font-weight: 900;
+      text-align: center;
+      letter-spacing: 0.045em;
+      text-shadow: 0 7px 18px #0007, 0 2px 8px var(--accent-blue-intense);
+      margin-bottom: 16px;
+    }
+    .glass-panel label {
+      color: var(--txt-muted);
+      font-size: 1.15em;
+      font-weight: 600;
+      margin-bottom: 7px;
+      display: block;
+      letter-spacing: 0.03em;
+    }
+    .glass-panel input[type="text"],
+    .glass-panel input[type="number"],
+    .glass-panel select {
+      background: rgba(255,255,255,0.13);
+      color: var(--txt-light);
+      border: 1.5px solid var(--accent-blue-intense);
+      box-shadow: 0 2px 10px 0 rgba(24,36,77,0.09);
+      border-radius: 18px;
+      padding: 14px 18px;
+      font-size: 1.1em;
+      margin-bottom: 5px;
+      width: 100%;
+      transition: border 0.2s, background 0.23s;
+    }
+    .glass-panel input:focus,
+    .glass-panel select:focus {
+      outline: none;
+      border-color: var(--accent-blue-intense);
+      background: rgba(94,166,255,0.16);
+    }
+    .glass-panel .button-main {
+      background: var(--accent-gradient);
+      color: var(--txt-light);
+      font-weight: 700;
+      font-size: 1.22em;
+      padding: 14px 0;
+      border: none;
+      border-radius: 16px;
+      margin-top: 14px;
+      width: 100%;
+      box-shadow: 0 6px 18px #0003;
+      letter-spacing: 0.04em;
+      transition: background 0.19s, transform 0.14s;
+      cursor: pointer;
+    }
+    .glass-panel .button-main:hover {
+      background: var(--accent-gradient-solid);
+      transform: translateY(-2px) scale(1.048);
+    }
+    .fade-out {
+      animation: fadeOut 1s ease-in-out forwards;
+    }
+    @keyframes fadeOut {
+      to {
+        opacity: 0;
+        transform: scale(1.05);
+      }
+    }
+    /* Opcional: Botón flotante de ayuda (estilo glass) */
+    #openBot {
+      position: fixed;
+      bottom: 32px;
+      right: 34px;
+      z-index: 50;
+      background: var(--accent-gradient);
+      border-radius: 50%;
+      padding: 18px;
+      box-shadow: 0 3px 15px #0007;
+      transition: background 0.17s, transform 0.16s;
+      border: none;
+    }
+    #openBot:hover {
+      background: var(--accent-gradient-solid);
+      transform: scale(1.12);
+    }
+    #openBot svg {
+      width: 30px;
+      height: 30px;
+      color: #fff;
+      display: block;
+    }
+    /* Chatbot ventana */
+    #botWindow {
+      position: fixed;
+      bottom: 104px;
+      right: 36px;
+      width: 320px;
+      background: #101829;
+      border-radius: 2rem;
+      box-shadow: 0 8px 32px 0 rgba(31,38,135,0.22);
+      border: 1.5px solid rgba(94, 166, 255, 0.18);
+      z-index: 51;
+      display: none;
+      flex-direction: column;
+    }
+    #botWindow.active { display: flex; }
+    #botWindow .flex { background: var(--accent-blue-mid); }
+    #botWindow input {
+      background: rgba(255,255,255,0.14);
+      color: #222;
+    }
+    #botWindow input:focus {
+      background: rgba(255,255,255,0.25);
+    }
+    /* Responsive */
+    @media (max-width: 600px) {
+      .glass-panel {
+        max-width: 97vw;
+        padding: 15vw 3vw;
+      }
+    }
+    .input-instruccion {
+  background: #fff !important;
+  color: #222 !important;
+  border: 1.5px solid var(--accent-blue-intense);
+  border-radius: 18px;
+  box-shadow: 0 2px 10px 0 rgba(24,36,77,0.08);
+  padding: 14px 18px;
+  font-size: 1.1em;
+  margin-bottom: 10px;
+  width: 100%;
+  transition: border 0.2s, background 0.23s;
+}
+.input-instruccion:focus {
+  outline: none;
+  border-color: var(--accent-blue-intense);
+  background: #eaf3fe;
+  color: #111;
+}
+.input-instruccion::placeholder {
+  color: #32383f;
+  opacity: 1;
+}

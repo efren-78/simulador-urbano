@@ -12,6 +12,7 @@
     <aside id="sidebar">
       <nav class="menu">
 <div class="sidebar-header">
+  
   <img class="icono-ciudad" src="imagenes/city.png" alt="Inicio" />
   <div class="loop-wrapper animacion-inicio">
     <div class="mountain"></div>
@@ -25,6 +26,7 @@
   </div>
 </div>
 
+ <!-- Animacion de titulo  -->
          <div class="titulo-urbano">
   TRÁFICO
   <div class="flip">
@@ -34,7 +36,19 @@
   </div>
 </div>
 
-<div class="swanky_wrapper">
+ <!-- Slider de trafico -->
+<div class="traffic-slider">
+  <div class="swanky_wrapper"></div>
+  <label for="traffic">TRAFICO</label>
+  <input type="range" id="traffic" min="1" max="3" step="1" value="1">
+  <div class="labels">
+    <span>F</span>
+    <span>M</span>
+    <span>C</span>
+  </div>
+</div>
+
+<!--<div class="swanky_wrapper">
   <input type="checkbox"  id="Opciones">
   <label for="Opciones">
     <img src="imagenes/settings.png" alt="Menú">
@@ -44,13 +58,12 @@
     <div class="swanky_wrapper__content">
       <ul>
         <li>Descargas</li>
-        <li>Historial</li>
-        <li>Configuración</li>
       </ul>
     </div>
   </label>
+  
 
-  <input type="checkbox"  id="Trafico">
+ <input type="checkbox"  id="Trafico">
   <label for="Trafico">
     <img src="imagenes/car-side.png" alt="Tráfico">
     <span class="menu-text">Tráfico</span>
@@ -64,10 +77,11 @@
       </ul>
     </div>
   </label>
-</div>
+</div>  -->
 
       </nav>
     </aside>
+    
 
     <!-- Contenido principal -->
     <main id="main-content">
@@ -85,6 +99,19 @@
         </div>
       </div>
 
+       <!-- botones de zoom -->
+
+<div class="zoom-controls">
+  <button id="zoom-in" title="Acercar">
+    <img src="imagenes/zoom.png" alt="Acercar" />
+  </button>
+  <button id="zoom-out" title="Alejar">
+    <img src="imagenes/minus.png" alt="Alejar" />
+  </button>
+</div>
+
+
+ <!-- Semaforo -->
       <canvas id="mapaCanvas" width="800" height="600"></canvas>
       <div class="semaforo-overlay">
         <div class="semaforo-poste-container">
@@ -98,10 +125,10 @@
     </div>
     <script src="script.js"></script>
 
-      <footer id="bottom-info">
+    <!--  <footer id="bottom-info">
         <p><strong>Zona Seleccionada:</strong></p>
         <p>Rutas alternas</p>
-      </footer>
+      </footer> -->
     </main>
   </div>
 </div>

@@ -1,17 +1,19 @@
 :root {
-  --accent-blue-light:  #2e3a76;
-  --accent-blue-mid:    #173a78;
-  --accent-blue-dark:   #0a1e38;
-  --accent-blue-intense:#062367;
-  --accent-gradient: linear-gradient(135deg, #223c67 10%, #173a78 55%, #0a1e38 100%);
-  --accent-gradient-solid: linear-gradient(90deg, #223c67 20%, #173a78 90%);
-  --accent-gradient-135: linear-gradient(135deg, #223c67 10%, #062367 100%);
-  --accent-start: #173a78;
-  --accent-end:   #062367;
-  --txt-light:  #ffffff;
-  --txt-muted:  #b5c4de;
-  --glass:      rgba(24, 36, 77, 0.18);
+  /* Estilos generales */
+  --accent-blue-light:    #22304b;   
+  --accent-blue-mid:      #182238;   
+  --accent-blue-dark:     #101829;  
+  --accent-blue-intense:  #0d294b;   
+  --accent-gradient: linear-gradient(135deg, #22304b 10%, #182238 55%, #101829 100%);
+  --accent-gradient-solid: linear-gradient(90deg, #22304b 20%, #182238 90%);
+  --accent-gradient-135: linear-gradient(135deg, #22304b 10%, #5ea6ff 100%);
+  --accent-start: #182238;
+  --accent-end:   #22304b;
+  --txt-light:    #ffffff;
+  --txt-muted:    #b7cafc;
+  --glass:        rgba(24, 36, 77, 0.18);
 }
+
 
 
 * {
@@ -26,7 +28,7 @@ body {
   color: var(--txt-light);
   min-height: 100vh;
   overflow: hidden;
-  box-shadow: 0 0 20px rgba(161, 130, 210, 0.4);
+  box-shadow: 0 0 20px rgb(255, 255, 255);
   text-align: center;
 }
 
@@ -38,7 +40,7 @@ body {
 
 /* === SIDEBAR === */
 #sidebar {
-  width: 60px;
+  width: 80px;
   background: var(--accent-gradient);
   padding: 20px 5px;
   display: flex;
@@ -52,7 +54,7 @@ body {
 }
 
 #sidebar:hover {
-  width: 260px;
+  width: 280px;
   padding: 20px;
 }
 
@@ -149,13 +151,27 @@ body {
   max-height: 300px;
 }
 
+#sidebar .traffic-slider {
+  opacity: 0;
+  max-height: 0;
+  overflow: hidden;
+  transition: opacity 0.3s, max-height 0.3s;
+  pointer-events: none;
+}
+
+#sidebar:hover .traffic-slider {
+  opacity: 1;
+  max-height: 200px; 
+  pointer-events: auto;
+}
+
 
 /* === MAIN CONTENT === */
 #main-content {
   flex: 1;
   display: flex;
   flex-direction: column;
-  background: #f5f7fa;
+  background: #101829;
   color: #222;
   transition: all 0.3s ease;
   overflow: hidden;
@@ -165,7 +181,7 @@ body {
 #top-bar {
   background: var(--accent-gradient);
   color: var(--txt-light);
-  padding: 15px 25px;
+  padding: 20px 25px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -175,7 +191,7 @@ body {
 .input-section {
   display: flex;
   gap: 10px;
-  width: 60%;
+  width: 75%;
 }
 
 #instruction-input {
@@ -246,8 +262,8 @@ body {
   background: var(--accent-gradient-135);
   border-radius: 10px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-  width: 95%;
-  height: 85%;
+  width: 90%;
+  height: 80%;
   margin: 20px auto;
 }
 
@@ -334,7 +350,7 @@ body {
 }
 
 
-/* === ANIMACIÓN DEL CAMIÓN ADAPTADA === */
+/* === ANIMACIÓN DEL CAMIÓN  === */
 .loop-wrapper {
   position: relative;
   width: 250px;
@@ -502,6 +518,8 @@ body {
   }
 }
 
+/* === SWANKY  === */
+
 .swanky_wrapper {
   width: 100%;
   overflow: hidden;
@@ -597,6 +615,8 @@ input[type='checkbox']:checked + label .lil_arrow {
   border-right: 2px solid var(--accent-end);
 }
 
+/* === SEMÁFORO === */
+
 #main-content {
     position: relative;
 }
@@ -669,6 +689,7 @@ input[type='checkbox']:checked + label .lil_arrow {
   align-items: center; 
 }
 
+/* === POSTE DEL SEMÁFORO === */
 .poste {
   width: 9px;              
   height: 180px;           
@@ -676,3 +697,114 @@ input[type='checkbox']:checked + label .lil_arrow {
   margin-top: 0px;         
   border-radius: 2px;
 }
+
+/* === ZOOM CONTROLES === */
+.zoom-controls {
+  position: absolute;
+  top: 130px;
+  right: 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 200;
+}
+
+.zoom-controls button {
+  background: var(--accent-blue-intense);
+  color: var(--txt-light);
+  border: none;
+  border-radius: 50%;
+  width: 45px;
+  height: 45px;
+  font-size: 1.8em;
+  font-weight: bold;
+  box-shadow: 0 3px 12px #0005;
+  cursor: pointer;
+  transition: background 0.18s, transform 0.15s;
+}
+.zoom-controls button:hover {
+  background: var(--accent-blue-light);
+  transform: scale(1.12);
+}
+
+.zoom-controls button img {
+  width: 45px;
+  height: 45px;
+  display: block;
+  margin: auto;
+  pointer-events: none;
+ 
+}
+
+
+
+/* slider de tráfico */
+
+.traffic-slider {
+  background: var(--accent-blue-mid);
+  padding: 18px 20px 10px 20px;
+  border-radius: 14px;
+  width: 260px;
+}
+
+.traffic-slider label {
+  color: var(--txt-muted);
+  font-size: 1.1em;
+  font-weight: 600;
+  margin-bottom: 10px;
+  display: block;
+}
+
+.traffic-slider input[type="range"] {
+  width: 100%;
+  appearance: none;
+  height: 7px;
+  background: var(--accent-blue-light);
+  border-radius: 6px;
+  outline: none;
+  margin-top: 15px;
+  margin-bottom: 6px;
+}
+
+.traffic-slider input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  background: var(--accent-blue-intense);
+  border-radius: 50%;
+  border: 2.5px solid var(--accent-blue-dark);
+  box-shadow: 0 2px 6px #0004;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.traffic-slider input[type="range"]:focus::-webkit-slider-thumb {
+  background: var(--txt-light);
+}
+
+.traffic-slider .labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 2px;
+  font-size: 0.93em;
+  color: var(--txt-muted);
+  opacity: 0.84;
+}
+
+.traffic-slider input[type="range"]::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  background: var(--accent-blue-intense);
+  border-radius: 50%;
+  border: 2.5px solid var(--accent-blue-dark);
+  cursor: pointer;
+}
+.traffic-slider input[type="range"]::-ms-thumb {
+  width: 22px;
+  height: 22px;
+  background: var(--accent-blue-intense);
+  border-radius: 50%;
+  border: 2.5px solid var(--accent-blue-dark);
+  cursor: pointer;
+}
+
+
