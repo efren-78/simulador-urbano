@@ -1,3 +1,4 @@
+//funcion para el slider de trafico
 const luces = document.querySelectorAll('.luces-circulo');
 
 luces.forEach((btn, idx) => {

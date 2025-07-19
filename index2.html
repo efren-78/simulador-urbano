@@ -1,104 +1,77 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+  
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Simulador de Tráfico - Configuración</title>
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css">
-  <style>
-    .fade-out {
-      animation: fadeOut 1s ease-in-out forwards;
-    }
-    @keyframes fadeOut {
-      to {
-        opacity: 0;
-        transform: scale(1.05);
-      }
-    }
-    
-    .glass-panel {
-      background: rgba(36, 48, 84, 0.45);
-      backdrop-filter: blur(18px) saturate(130%);
-      border-radius: 2.5rem;
-      box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.25);
-      border: 1.5px solid rgba(255, 255, 255, 0.13);
-    }
-  </style>
+  <link rel="stylesheet" href="style2.css">
+
 </head>
+<body>
+  <!-- Fondo difuso, opcional -->
+  <img src="imagenes/azul.jpg" alt="Fondo" class="background-img" />
 
-<body class="relative min-h-screen text-white font-sans overflow-hidden bg-black">
+  <div class="dashboard-center">
+    <form class="glass-panel" onsubmit="iniciarSimulador(); return false;">
+      <h1>NeuroTraffic</h1>
+      <div style="width:100%;">
+        
+       <input
+  type="text"
+  placeholder="Escribe o di una instrucción…"
+  id="instruction-input"
+  class="input-instruccion"
+/>
 
+      </div>
+      <div style="width:100%; display:flex; flex-direction:column; gap:8px;">
+        <label for="numCars">Número de autos:</label>
+        <input type="number" id="numCars" min="1" max="100" value="10" />
+      </div>
+      <div style="width:100%; display:flex; flex-direction:column; gap:8px;">
+        <label for="trafico">Condición de tráfico:</label>
+        <select id="trafico">
+          <option value="fluido">Fluido</option>
+          <option value="moderado">Moderado</option>
+          <option value="congestionado">Congestionado</option>
+        </select>
+      </div>
+      <button type="submit" class="button-main">Iniciar Simulador</button>
+    </form>
+  </div>
 
-  <img src="imagenes/azul.jpg" alt="Fondo" class="absolute inset-0 w-full h-full object-cover z-0 opacity-60" />
+  <!-- Botón flotante para abrir el chatbot -->
+  <button id="openBot" title="Ayuda">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.77 9.77 0 01-3-.46l-4 1 1.06-3.2A7.984 7.984 0 013 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+    </svg>
+  </button>
 
-
-  <div class="flex min-h-screen items-center justify-center">
-    <div class="glass-panel w-full max-w-2xl flex flex-col items-center gap-8 p-16 md:p-20">
-      <h1 class="text-5xl font-extrabold mb-6 text-center text-white drop-shadow-xl tracking-wide">NeuroTraffic</h1>
-
-      <input
-        type="text"
-        placeholder="Escribe o di una instrucción…"
-        class="rounded-full bg-white/90 px-8 py-4 text-2xl text-gray-700 shadow-lg focus:outline-none focus:ring-4 focus:ring-blue-400 transition-all duration-300 w-full mb-6"
-        id="instruction-input"
-      />
-
-     
-
-<div class="w-full flex flex-col gap-2 items-center">
-  <label class="text-white text-xl font-medium" for="numCars">Número de autos:</label>
-  <input type="number" id="numCars" min="1" max="100" value="10"
-    class="px-3 py-2 rounded-lg bg-white/85 text-gray-900 text-base shadow-inner focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300 w-2/3" />
-</div>
-
-<div class="w-full flex flex-col gap-2 items-center">
-  <label class="text-white text-xl font-medium" for="trafico">Condición de tráfico:</label>
-  <select id="trafico"
-    class="px-3 py-2 rounded-lg bg-white/85 text-gray-900 text-base shadow-inner focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300 w-2/3">
-    <option value="fluido">Fluido</option>
-    <option value="moderado">Moderado</option>
-    <option value="congestionado">Congestionado</option>
-  </select>
-</div>
-
-       <button
-    class="mt-4 w-2/3 bg-gradient-to-r from-blue-700 via-blue-800 to-blue-900 hover:from-blue-800 hover:to-blue-950 text-white font-semibold py-2 rounded-lg shadow-lg text-base transition-all duration-300 ease-in-out transform hover:-translate-y-1 hover:scale-105 active:scale-95"
-    onclick="iniciarSimulador()"
-  >
-        Iniciar Simulador
-      </button>
+  <!-- Chatbot ventana -->
+  <div id="botWindow">
+    <div class="flex items-center justify-between bg-blue-800 rounded-t-2xl p-4">
+      <span class="text-white font-bold">Asistente NeuroTraffic</span>
+      <button id="closeBot" class="text-white text-2xl leading-none hover:text-red-300" style="background:transparent;border:none;">&times;</button>
+    </div>
+    <div id="botMessages" class="p-4 h-60 overflow-y-auto text-gray-100 text-base space-y-4" style="background: #22304b;">
+      <div class="bg-blue-100/30 p-3 rounded-xl shadow text-white">
+        ¡Hola! 👋 Soy tu asistente.<br>
+        <b>¿Cómo puedo ayudarte con el simulador?</b><br><br>
+        Por ejemplo:<br>
+        • Escribe el número de autos que deseas simular.<br>
+        • Selecciona la condición de tráfico.<br>
+        • Haz clic en "Iniciar Simulador" para comenzar.<br>
+        • Si tienes dudas, escríbeme aquí.<br>
+      </div>
+    </div>
+    <div class="p-3 flex gap-2 border-t border-blue-100/20">
+      <input id="botInput" type="text" placeholder="Escribe aquí tu duda..."
+        class="flex-1 rounded-xl px-3 py-2 border border-blue-200 text-black focus:outline-none focus:ring-2 focus:ring-blue-400 transition">
+      <button id="botSend" class="bg-blue-700 text-white px-4 py-2 rounded-xl hover:bg-blue-800 transition" style="border:none;">Enviar</button>
     </div>
   </div>
-
-
-<button id="openBot" class="fixed bottom-8 right-8 z-50 bg-gradient-to-r from-blue-700 via-blue-800 to-blue-900 rounded-full p-4 shadow-lg hover:scale-110 transition-transform">
-  <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.77 9.77 0 01-3-.46l-4 1 1.06-3.2A7.984 7.984 0 013 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
-</button>
-
-
-<div id="botWindow" class="fixed bottom-24 right-8 w-80 bg-white rounded-2xl shadow-2xl z-50 border-2 border-blue-700/20 hidden flex-col">
-  <div class="flex items-center justify-between bg-blue-800 rounded-t-2xl p-4">
-    <span class="text-white font-bold">Asistente NeuroTraffic</span>
-    <button id="closeBot" class="text-white text-2xl leading-none hover:text-red-300">&times;</button>
-  </div>
-  <div id="botMessages" class="p-4 h-60 overflow-y-auto text-gray-800 text-base space-y-4">
-    <div class="bg-blue-100 p-3 rounded-xl shadow">¡Hola! 👋 Soy tu asistente.<br>
-      <b>¿Cómo puedo ayudarte con el simulador?</b><br><br>
-      Por ejemplo:<br>
-      • Escribe el número de autos que deseas simular.<br>
-      • Selecciona la condición de tráfico.<br>
-      • Haz clic en "Iniciar Simulador" para comenzar.<br>
-      • Si tienes dudas, escríbeme aquí.<br>
-    </div>
-  </div>
-  <div class="p-3 flex gap-2 border-t border-blue-100">
-    <input id="botInput" type="text" placeholder="Escribe aquí tu duda..."
-      class="flex-1 rounded-xl px-3 py-2 border border-blue-200 text-black focus:outline-none focus:ring-2 focus:ring-blue-400 transition">
-    <button id="botSend" class="bg-blue-700 text-black px-4 py-2 rounded-xl hover:bg-blue-800 transition">Enviar</button>
-  </div>
-</div>
-
 
   <script>
     function iniciarSimulador() {
@@ -113,7 +86,12 @@
         window.location.href = 'index.html';
       }, 1000);
     }
+    // Chatbot open/close simple
+    document.getElementById('openBot').onclick = () =>
+      document.getElementById('botWindow').classList.add('active');
+    document.getElementById('closeBot').onclick = () =>
+      document.getElementById('botWindow').classList.remove('active');
   </script>
-  <script src="chatbot.js"></script>
-
+  <!-- Si necesitas chatbot.js agrégalo aquí -->
 </body>
+</html>

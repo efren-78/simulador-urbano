@@ -33,9 +33,7 @@ function init() {
   const renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
   renderer.setSize(canvas.clientWidth, canvas.clientHeight);
 
-  // Fondo y niebla
-  scene.background = new THREE.Color(0xa0a0a0);
-  scene.fog = new THREE.Fog(0xa0a0a0, 50, 200);
+
 
   // Luz
   const light = new THREE.DirectionalLight(0xffffff, 1);
@@ -219,3 +217,23 @@ document.getElementById("reload-button").addEventListener("click", reloadSim);
 
 // Iniciar
 init();
+
+// --- Control de zoom ---
+let zoomLevel = 100; 
+const minZoom = 40;
+const maxZoom = 350;
+
+function setCameraZoom(newZoom) {
+  zoomLevel = Math.max(minZoom, Math.min(maxZoom, newZoom));
+  // Mantén la relación Y y Z para visión cenital
+  window.simulation.camera.position.set(0, zoomLevel, zoomLevel);
+  window.simulation.camera.lookAt(0, 0, 0);
+  window.simulation.renderer.render(window.simulation.scene, window.simulation.camera);
+}
+
+document.getElementById("zoom-in").addEventListener("click", function() {
+  setCameraZoom(zoomLevel - 15);
+});
+document.getElementById("zoom-out").addEventListener("click", function() {
+  setCameraZoom(zoomLevel + 20);
+});
