@@ -12,7 +12,7 @@ let estadoSemaforoActual = "red";
 
 function crearCalleLarga(scene, width, length, rotationY = 0, position = { x: 0, z: 0 }) {
   const geometry = new THREE.PlaneGeometry(width, length);
-  const material = new THREE.MeshPhongMaterial({ color: 0x2c2c2c });
+const material = new THREE.MeshPhongMaterial({ color: 0xffffff });
   const calle = new THREE.Mesh(geometry, material);
   calle.rotation.x = -Math.PI / 2;
   calle.rotation.z = rotationY;
@@ -60,22 +60,21 @@ function init() {
     crearCalleLarga(scene, 5, 100, 0, { x: 0, z: i });
     crearCalleLarga(scene, 5, 100, Math.PI / 2, { x: i, z: 0 });
   }
-  crearCalleLarga(scene, 5, 140, Math.PI / 4, { x: 0, z: 0 });
 
   // === SEMÁFOROS ===
   crearSemaforo(scene, { x: 0, z: 0 }, "green");
   crearSemaforo(scene, { x: 10, z: -10 }, "red");
 
   const rutas = [
-    { tipo: "horizontal", z: -10 },
-    { tipo: "horizontal", z: 10 },
-    { tipo: "vertical", x: -10 },
-    { tipo: "vertical", x: 10 },
-    { tipo: "diagonal", offset: -30 },
-    { tipo: "diagonal", offset: -10 },
-    { tipo: "diagonal", offset: 10 },
-    { tipo: "diagonal", offset: 30 }
-  ];
+  { tipo: "horizontal", desde: { x: -50, y: 50 }, hasta: { x: 50, y: 50 } },  // calle1
+  { tipo: "vertical", desde: { x: 50, y: 50 }, hasta: { x: 50, y: 0 } },      // calle2
+  { tipo: "horizontal", desde: { x: 50, y: 0 }, hasta: { x: -10, y: 0 } },    // calle3
+  { tipo: "vertical", desde: { x: -10, y: 0 }, hasta: { x: -10, y: -50 } },   // calle4
+  { tipo: "horizontal", desde: { x: -10, y: -50 }, hasta: { x: -50, y: -50 } }, // calle5
+  { tipo: "vertical", desde: { x: -50, y: -50 }, hasta: { x: -50, y: 50 } },  // calle6
+  { tipo: "vertical", desde: { x: -30, y: 0 }, hasta: { x: -30, y: -50 } },   // calle7
+  { tipo: "horizontal", desde: { x: -30, y: 0 }, hasta: { x: -10, y: 0 } }    // calle8
+];
 
   const carMaterial = new THREE.MeshPhongMaterial({ color: 0xff4444 });
 
