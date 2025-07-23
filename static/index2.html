@@ -74,23 +74,43 @@
   </div>
 
   <script>
-    function iniciarSimulador() {
-      const numCars = document.getElementById('numCars').value;
-      const trafico = document.getElementById('trafico').value;
-      localStorage.setItem('config_numCars', numCars);
-      localStorage.setItem('config_trafico', trafico);
+  async function iniciarSimulador() {
+    const prompt = document.getElementById('instruction-input').value;
+    const numCars = document.getElementById('numCars').value;
+    const trafico = document.getElementById('trafico').value;
 
+    try {
+      // Enviar el prompt al backend (NLP)
+      const response = await fetch("http://localhost:8000/nlp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt: prompt || `Iniciar simulación con ${numCars} autos en tráfico ${trafico}`
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || "Error en el servidor");
+      }
+
+      // Animación y redirección después del envío
       const panel = document.querySelector('.glass-panel');
       panel.classList.add('fade-out');
       setTimeout(() => {
         window.location.href = 'index.html';
       }, 1000);
+
+    } catch (error) {
+      console.error("Error al enviar datos:", error);
+      alert("No se pudo iniciar la simulación. Revisa el backend.");
     }
-    // Chatbot open/close simple
-    document.getElementById('openBot').onclick = () =>
-      document.getElementById('botWindow').classList.add('active');
-    document.getElementById('closeBot').onclick = () =>
-      document.getElementById('botWindow').classList.remove('active');
+  }
+  // Chatbot open/close simple
+  document.getElementById('openBot').onclick = () =>
+    document.getElementById('botWindow').classList.add('active');
+  document.getElementById('closeBot').onclick = () =>
+    document.getElementById('botWindow').classList.remove('active');
   </script>
   <!-- Si necesitas chatbot.js agrégalo aquí -->
 </body>

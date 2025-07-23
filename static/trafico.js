@@ -313,25 +313,58 @@ document.getElementById("zoom-out").addEventListener("click", function() {
 });
 
 //-----Comunicacion entre frontend-backend-----s
-// Enviar configuración al backend
-const numCars = localStorage.getItem("config_numCars") || "10";
-const trafico = localStorage.getItem("config_trafico") || "moderado"
+async function sincronizarEstado() {
+  try {
+    const estado = await fetch("http://localhost:8000/estado").then(r => r.json());
+    console.log("Estado sincronizado:", estado);
 
-if (!numCars || !trafico) {
-  alert("No se ha configurado la simulación. Redirigiendo...");
-  window.location.href = "index2.html";
-} else {
-  fetch("http://localhost:8000/configurar", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      numCars: parseInt(numCars),
-      trafico: trafico
-    })
-  })
-  .then(res => res.json())
-  .then(data => console.log("Cnfiguracion enviada", data));
+    ajustarCantidadAutos(estado.numCars);
+    ajustarTrafico(estado.trafico);
+    if (estado.running) playSim();
+  } catch (err) {
+    console.error("Error sincronizando estado:", err);
+  }
 }
+
+sincronizarEstado();
+
+// Enviar configuración al backend
+async function configurarSiNecesario() {
+  try {
+    // Consultar estado actual
+    const estado = await fetch("http://localhost:8000/estado").then(r => r.json());
+    console.log("Estado actual:", estado);
+
+    // Si ya hay simulación corriendo, NO mandar configuración
+    if (estado.running) {
+      console.log("Simulación en curso, no se reconfigura.");
+      return;
+    }
+
+    // Si no hay simulación activa, configurar con localStorage
+    const numCars = localStorage.getItem("config_numCars") || "10";
+    const trafico = localStorage.getItem("config_trafico") || "moderado";
+
+    if (!numCars || !trafico) {
+      alert("No se ha configurado la simulación. Redirigiendo...");
+      window.location.href = "index2.html";
+    } else {
+      await fetch("http://localhost:8000/configurar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          numCars: parseInt(numCars),
+          trafico: trafico
+        })
+      });
+      console.log("Configuración aplicada desde trafico.js");
+    }
+  } catch (err) {
+    console.error("Error verificando estado:", err);
+  }
+}
+
+configurarSiNecesario();
 
 
 const socket = new WebSocket("ws://localhost:8000/ws");
