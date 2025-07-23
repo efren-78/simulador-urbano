@@ -1,0 +1,7 @@
+{
+  "rutaA": ["calle1", "calle2", "calle3", "calle4"],
+  "rutaB": ["calle3", "calle4", "calle5"],
+  "rutaC": ["calle6", "calle1", "calle2"],
+  "rutaD": ["calle7", "calle8", "calle4"],
+  "rutaE": ["calle2", "calle3", "calle5", "calle6"]
+}

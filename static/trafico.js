@@ -125,7 +125,7 @@ function ajustarCantidadAutos(cantidad) {
 
   const velocidadBase = calcularVelocidadBase(localStorage.getItem("config_trafico") || "moderado");
   const iconos = ['car4.png', 'car2.png', 'car3.png'];
-  const nombresRutas = Object.keys(rutasCurvas);
+  const nombresRutas = Object.keys(rutasCurvas).filter(r => r.startsWith("ruta"));
 
   for (let i = 0; i < cantidad; i++) {
     const rutaNombre = nombresRutas[i % nombresRutas.length];
@@ -235,38 +235,64 @@ function init() {
 
   window.simulation = { scene, camera, renderer };
 
-  fetch('rutas.json')
-    .then(res => res.json())
-    .then(data => {
-      for (const nombre in data) {
-        const ruta = data[nombre];
-        rutasCurvas[nombre] = new THREE.CatmullRomCurve3(
-          ruta.map(p => new THREE.Vector3(p.x, 0, p.y))
-        );
-      }
+  // --- Cargar rutas (calles simples) y rutas compuestas (autos)
+  Promise.all([
+    fetch('rutas.json').then(res => res.json()),
+    fetch('rutas_autos.json').then(res => res.json())
+  ])
+  .then(([calles, rutasAutos]) => {
+    const callesVectorizadas = {};
 
-      for (const nombre in rutasCurvas) {
-        const curve = rutasCurvas[nombre];
-        crearSuperficieCalle(curve, 20);
-        crearLineaDesplazada(curve, 4, 0x000000);
-        crearLineaDesplazada(curve, -4, 0x000000);
-        crearLineaDesplazada(curve, 0, 0xffff00);
-      }
+    // Convertir cada calle a arreglo de Vector3
+    for (const nombre in calles) {
+      callesVectorizadas[nombre] = calles[nombre].map(p => new THREE.Vector3(p.x, 0, p.y));
+    }
 
-      // Crear semáforos: ajusta posiciones según tu mapa
-      crearSemaforo(new THREE.Vector3(0, 0, 0), "green");
-      crearSemaforo(new THREE.Vector3(20, 0, 20), "red");
+    // Crear rutas largas compuestas (rutaA, rutaB, ...)
+    for (const nombre in rutasAutos) {
+      const listaCalles = rutasAutos[nombre];
+      let puntosRuta = [];
 
-      // Leer configuración inicial
-      const numCars = parseInt(localStorage.getItem("config_numCars")) || 10;
-      const trafico = localStorage.getItem("config_trafico") || "moderado";
+      listaCalles.forEach(calleNombre => {
+        const puntos = callesVectorizadas[calleNombre];
+        if (!puntos) return;  // Calle no encontrada
+        if (puntosRuta.length > 0) {
+          const last = puntosRuta[puntosRuta.length - 1];
+          if (!last.equals(puntos[0])) {
+            puntosRuta.push(...puntos);
+          } else {
+            puntosRuta.push(...puntos.slice(1));  // evitar duplicado
+          }
+        } else {
+          puntosRuta.push(...puntos);
+        }
+      });
 
-      ajustarCantidadAutos(numCars);
-      ajustarTrafico(trafico);
-    })
-    .catch(err => console.error("Error al cargar rutas.json:", err));
+      // Crear y guardar la curva final
+      const curva = new THREE.CatmullRomCurve3(puntosRuta);
+      rutasCurvas[nombre] = curva;
 
-  // Ajustar cámara al cambiar tamaño ventana
+      // Dibujar visualmente la ruta
+      crearSuperficieCalle(curva, 20);
+      crearLineaDesplazada(curva, 4, 0x000000);
+      crearLineaDesplazada(curva, -4, 0x000000);
+      crearLineaDesplazada(curva, 0, 0xffff00);
+    }
+
+    // Crear semáforos
+    crearSemaforo(new THREE.Vector3(0, 0, 0), "green");
+    crearSemaforo(new THREE.Vector3(20, 0, 20), "red");
+
+    // Configuración inicial
+    const numCars = parseInt(localStorage.getItem("config_numCars")) || 10;
+    const trafico = localStorage.getItem("config_trafico") || "moderado";
+
+    ajustarCantidadAutos(numCars);
+    ajustarTrafico(trafico);
+  })
+  .catch(err => console.error("Error cargando rutas:", err));
+
+  // Resize dinámico
   window.addEventListener("resize", () => {
     const canvas = renderer.domElement;
     camera.aspect = canvas.clientWidth / canvas.clientHeight;
@@ -276,6 +302,7 @@ function init() {
 
   renderer.render(scene, camera);
 }
+
 
 // --- NLP: enviar prompt al backend y ejecutar acciones ---
 async function enviarPrompt() {
