@@ -1,32 +1,103 @@
+import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
+
+let scene, camera, renderer;
 let running = false;
 let animationId;
-const cars = [];
-const carRoutes = [];
-const carSpeeds = [];
+
+const autos = [];
+const rutasCurvas = {};
 const semaforos = [];
+const loader = new THREE.TextureLoader();
 
-const rutas = [
-  { tipo: "horizontal", z: -10 },
-  { tipo: "horizontal", z: 10 },
-  { tipo: "vertical", x: -10 },
-  { tipo: "vertical", x: 10 },
-  { tipo: "diagonal", offset: -30 },
-  { tipo: "diagonal", offset: -10 },
-  { tipo: "diagonal", offset: 10 },
-  { tipo: "diagonal", offset: 30 }
-];
+let zoomLevel = 100; 
+const minZoom = 40;
+const maxZoom = 350;
 
-function crearCalleLarga(scene, width, length, rotationY = 0, position = { x: 0, z: 0 }) {
-  const geometry = new THREE.PlaneGeometry(width, length);
-  const material = new THREE.MeshPhongMaterial({ color: 0x2c2c2c });
-  const calle = new THREE.Mesh(geometry, material);
-  calle.rotation.x = -Math.PI / 2;
-  calle.rotation.z = rotationY;
-  calle.position.set(position.x, 0, position.z);
-  scene.add(calle);
+// --- Función para crear línea desplazada (bordes de calle) ---
+function crearLineaDesplazada(curve, offset, color) {
+  const points = [];
+  const divisions = 50;
+
+  for (let i = 0; i <= divisions; i++) {
+    const t = i / divisions;
+    const pt = curve.getPoint(t);
+    const tangent = curve.getTangent(t);
+    // Normal en XZ plane (horizontal)
+    const normal = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
+    const displacedPt = pt.clone().addScaledVector(normal, offset);
+    points.push(displacedPt);
+  }
+
+  const geometry = new THREE.BufferGeometry().setFromPoints(points);
+  const material = new THREE.LineBasicMaterial({ color });
+  const line = new THREE.Line(geometry, material);
+  scene.add(line);
 }
 
-function crearSemaforo(scene, position, initialState = "red") {
+// --- Función para crear superficie entre bordes ---
+function crearSuperficieCalle(curve, ancho) {
+  const divisions = 100;
+  const izquierda = [], derecha = [];
+
+  for (let i = 0; i <= divisions; i++) {
+    const t = i / divisions;
+    const pt = curve.getPoint(t);
+    const tangent = curve.getTangent(t);
+    const normal = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
+
+    izquierda.push(pt.clone().addScaledVector(normal, ancho / 2));
+    derecha.push(pt.clone().addScaledVector(normal, -ancho / 2));
+  }
+
+  const vertices = [];
+  for (let i = 0; i < divisions; i++) {
+    vertices.push(
+      izquierda[i].x, izquierda[i].y, izquierda[i].z,
+      derecha[i].x, derecha[i].y, derecha[i].z,
+      izquierda[i + 1].x, izquierda[i + 1].y, izquierda[i + 1].z,
+
+      derecha[i].x, derecha[i].y, derecha[i].z,
+      derecha[i + 1].x, derecha[i + 1].y, derecha[i + 1].z,
+      izquierda[i + 1].x, izquierda[i + 1].y, izquierda[i + 1].z,
+    );
+  }
+
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+  geometry.computeVertexNormals();
+
+  const material = new THREE.MeshStandardMaterial({ color: 0x222222 });
+  const mesh = new THREE.Mesh(geometry, material);
+  scene.add(mesh);
+}
+
+// --- Crear auto con textura y velocidad variable ---
+function crearAuto(nombreRuta, icono = 'car1.png', velocidadBase = 0.001) {
+  loader.load(`imagenes/${icono}`, texture => {
+    const geometry = new THREE.PlaneGeometry(20, 20);
+    const material = new THREE.MeshBasicMaterial({
+      map: texture,
+      transparent: true,
+      side: THREE.DoubleSide
+    });
+
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.rotation.x = -Math.PI / 2;
+    mesh.position.y = 1;
+
+    scene.add(mesh);
+
+    autos.push({
+      mesh,
+      ruta: rutasCurvas[nombreRuta],
+      progreso: Math.random(),
+      velocidad: velocidadBase + Math.random() * 0.0015
+    });
+  });
+}
+
+// --- Crear semáforo ---
+function crearSemaforo(position, initialState = "red") {
   const color = initialState === "green" ? 0x00ff00 : 0xff0000;
   const geometry = new THREE.BoxGeometry(0.5, 2, 0.5);
   const material = new THREE.MeshPhongMaterial({ color });
@@ -37,177 +108,44 @@ function crearSemaforo(scene, position, initialState = "red") {
   semaforos.push(semaforo);
 }
 
-function init() {
-  const canvas = document.getElementById("mapaCanvas");
-  const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(75, canvas.clientWidth / canvas.clientHeight, 0.1, 1000);
-  const renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
-  renderer.setSize(canvas.clientWidth, canvas.clientHeight);
-
-  // Luz
-  const light = new THREE.DirectionalLight(0xffffff, 1);
-  light.position.set(20, 40, 20);
-  scene.add(light);
-
-  // Calles horizontales
-  for (let i = -20; i <= 20; i += 10) {
-    crearCalleLarga(scene, 5, 100, 0, { x: 0, z: i });
-  }
-
-  // Calles verticales
-  for (let i = -20; i <= 20; i += 10) {
-    crearCalleLarga(scene, 5, 100, Math.PI / 2, { x: i, z: 0 });
-  }
-
-  // Avenida diagonal
-  crearCalleLarga(scene, 5, 140, Math.PI / 4, { x: 0, z: 0 });
-
-  // Semáforos
-  crearSemaforo(scene, { x: 0, z: 0 }, "green");
-  crearSemaforo(scene, { x: 10, z: -10 }, "red");
-
-  // Leer configuración desde localStorage
-  const numCars = parseInt(localStorage.getItem("config_numCars")) || 10;
-  const trafico = localStorage.getItem("config_trafico") || "moderado";
-
-  // Escalar velocidad según condición de tráfico
-  let velocidadBase = calcularVelocidadBase(trafico);
-
-  // Autos iniciales
-  crearAutos(scene, numCars, velocidadBase);
-
-  // Guardar en window para uso global
-  window.simulation = { scene, camera, renderer };
-
-  // Ajuste de cámara
-  camera.position.set(0, 100, 100);
-  camera.lookAt(0, 0, 0);
-
-  // Responder a cambios de tamaño
-  window.addEventListener("resize", () => {
-    const canvas = renderer.domElement;
-    camera.aspect = canvas.clientWidth / canvas.clientHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(canvas.clientWidth, canvas.clientHeight);
-  });
-
-  renderer.render(scene, camera);
-}
-
-// ✅ Crear autos
-function crearAutos(scene, cantidad, velocidadBase) {
-  const colores = [0xff4444, 0x44ff44, 0x4488ff, 0xffff44];
-
-  for (let i = 0; i < cantidad; i++) {
-    const ruta = rutas[i % rutas.length];
-    const color = colores[i % colores.length];
-    const carMaterial = new THREE.MeshPhongMaterial({ color });
-    const car = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 2), carMaterial);
-
-    if (ruta.tipo === "horizontal") {
-      car.position.set(-50, 0.5, ruta.z);
-    } else if (ruta.tipo === "vertical") {
-      car.position.set(ruta.x, 0.5, 50);
-      car.rotation.y = Math.PI / 2;
-    } else if (ruta.tipo === "diagonal") {
-      car.position.set(-50 + ruta.offset, 0.5, 50 - ruta.offset);
-      car.rotation.y = -Math.PI / 4;
-    }
-
-    cars.push(car);
-    carRoutes.push(ruta);
-    carSpeeds.push(velocidadBase + Math.random() * 0.02);
-    scene.add(car);
-  }
-}
-
-// ✅ Función para calcular velocidad base
+// --- Calcular velocidad base según tráfico ---
 function calcularVelocidadBase(nivel) {
   switch (nivel.toLowerCase()) {
-    case "fluido": return 0.1;
-    case "moderado": return 0.06;
-    case "congestionado": return 0.03;
-    default: return 0.06;
+    case "fluido": return 0.002;  
+    case "moderado": return 0.001;
+    case "congestionado": return 0.0005;
+    default: return 0.001;
   }
 }
 
-function animate() {
-  if (!running) return;
-
-  const { scene, camera, renderer } = window.simulation;
-
-  // Ciclo de semáforos
-  const time = performance.now() * 0.001;
-  const cycle = Math.floor(time) % 10 < 5 ? "green" : "red";
-
-  semaforos.forEach(semaforo => {
-    const desiredColor = cycle === "green" ? 0x00ff00 : 0xff0000;
-    if (semaforo.userData.state !== cycle) {
-      semaforo.material.color.setHex(desiredColor);
-      semaforo.userData.state = cycle;
-    }
-  });
-
-  for (let i = 0; i < cars.length; i++) {
-    const car = cars[i];
-    const route = carRoutes[i];
-    const speed = carSpeeds[i];
-
-    let detener = false;
-    semaforos.forEach(semaforo => {
-      const dist = car.position.distanceTo(semaforo.position);
-      if (dist < 3 && semaforo.userData.state === "red") {
-        detener = true;
-      }
-    });
-
-    if (!detener) {
-      if (route.tipo === "horizontal") {
-        car.position.x += speed;
-        if (car.position.x > 50) car.position.x = -50;
-      } else if (route.tipo === "vertical") {
-        car.position.z -= speed;
-        if (car.position.z < -50) car.position.z = 50;
-      } else if (route.tipo === "diagonal") {
-        car.position.x += speed;
-        car.position.z -= speed;
-        if (car.position.x > 50 || car.position.z < -50) {
-          car.position.x = -50 + route.offset;
-          car.position.z = 50 - route.offset;
-        }
-      }
-    }
-  }
-
-  renderer.render(scene, camera);
-  animationId = requestAnimationFrame(animate);
-}
-
-// ✅ Ajustar número de autos dinámicamente
+// --- Ajustar cantidad de autos ---
 function ajustarCantidadAutos(cantidad) {
-  const { scene } = window.simulation;
-
-  // Limpiar autos actuales
-  cars.forEach(car => scene.remove(car));
-  cars.length = 0;
-  carRoutes.length = 0;
-  carSpeeds.length = 0;
+  autos.forEach(auto => scene.remove(auto.mesh));
+  autos.length = 0;
 
   const velocidadBase = calcularVelocidadBase(localStorage.getItem("config_trafico") || "moderado");
-  crearAutos(scene, cantidad, velocidadBase);
+  const iconos = ['car4.png', 'car2.png', 'car3.png'];
+  const nombresRutas = Object.keys(rutasCurvas);
+
+  for (let i = 0; i < cantidad; i++) {
+    const rutaNombre = nombresRutas[i % nombresRutas.length];
+    const icono = iconos[i % iconos.length];
+    crearAuto(rutaNombre, icono, velocidadBase);
+  }
+
   console.log(`Se ajustaron ${cantidad} autos en la simulación`);
 }
 
-// ✅ Ajustar nivel de tráfico dinámicamente
+// --- Ajustar velocidades según tráfico ---
 function ajustarTrafico(nivel) {
   const velocidadBase = calcularVelocidadBase(nivel);
-  for (let i = 0; i < carSpeeds.length; i++) {
-    carSpeeds[i] = velocidadBase + Math.random() * 0.02;
-  }
+  autos.forEach(auto => {
+    auto.velocidad = velocidadBase + Math.random() * 0.0015;
+  });
   console.log(`Velocidad ajustada según tráfico: ${nivel}`);
 }
 
-// -----Operaciones básicas-----
+// --- Play, Stop, Reload ---
 function playSim() {
   if (!running) {
     running = true;
@@ -222,19 +160,124 @@ function stopSim() {
 
 function reloadSim() {
   stopSim();
-  for (let i = 0; i < cars.length; i++) {
-    const route = carRoutes[i];
-    if (route.tipo === 'horizontal') cars[i].position.x = -50;
-    else if (route.tipo === 'vertical') cars[i].position.z = 50;
-    else if (route.tipo === 'diagonal') {
-      cars[i].position.x = -50 + route.offset;
-      cars[i].position.z = 50 - route.offset;
-    }
-  }
-  window.simulation.renderer.render(window.simulation.scene, window.simulation.camera);
+  autos.forEach(auto => auto.progreso = Math.random());
+  renderer.render(scene, camera);
 }
 
-// -----Procesamiento de prompteo-----
+// --- Animación con semáforos y autos ---
+function animate() {
+  if (!running) return;
+
+  const time = performance.now() * 0.001;
+  const cycle = Math.floor(time) % 10 < 5 ? "green" : "red";
+
+  semaforos.forEach(semaforo => {
+    const desiredColor = cycle === "green" ? 0x00ff00 : 0xff0000;
+    if (semaforo.userData.state !== cycle) {
+      semaforo.material.color.setHex(desiredColor);
+      semaforo.userData.state = cycle;
+    }
+  });
+
+  autos.forEach(auto => {
+    // Control detención cerca semáforo rojo
+    let detener = false;
+    semaforos.forEach(semaforo => {
+      const dist = auto.mesh.position.distanceTo(semaforo.position);
+      if (dist < 5 && semaforo.userData.state === "red") {
+        detener = true;
+      }
+    });
+
+    if (!detener) {
+      auto.progreso += auto.velocidad;
+      if (auto.progreso > 1) auto.progreso = 0;
+    }
+
+    const pos = auto.ruta.getPointAt(auto.progreso);
+    const nextPos = auto.ruta.getPointAt((auto.progreso + 0.01) % 1);
+    auto.mesh.position.copy(pos);
+    auto.mesh.lookAt(nextPos);
+  });
+
+  renderer.render(scene, camera);
+  animationId = requestAnimationFrame(animate);
+}
+
+// --- Control de zoom ---
+function setCameraZoom(newZoom) {
+  zoomLevel = Math.max(minZoom, Math.min(maxZoom, newZoom));
+  camera.position.set(0, zoomLevel, zoomLevel);
+  camera.lookAt(0, 0, 0);
+  renderer.render(scene, camera);
+}
+
+// --- Inicialización ---
+function init() {
+  const canvas = document.getElementById("mapaCanvas");
+
+  scene = new THREE.Scene();
+  camera = new THREE.PerspectiveCamera(75, canvas.clientWidth / canvas.clientHeight, 0.1, 1000);
+  camera.position.set(0, zoomLevel, zoomLevel);
+  camera.lookAt(0, 0, 0);
+
+  renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+  renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+
+  scene.add(new THREE.AmbientLight(0xffffff, 1));
+
+  const plane = new THREE.Mesh(
+    new THREE.PlaneGeometry(300, 300),
+    new THREE.MeshPhongMaterial({ color: 0xcccccc })
+  );
+  plane.rotation.x = -Math.PI / 2;
+  scene.add(plane);
+
+  window.simulation = { scene, camera, renderer };
+
+  fetch('rutas.json')
+    .then(res => res.json())
+    .then(data => {
+      for (const nombre in data) {
+        const ruta = data[nombre];
+        rutasCurvas[nombre] = new THREE.CatmullRomCurve3(
+          ruta.map(p => new THREE.Vector3(p.x, 0, p.y))
+        );
+      }
+
+      for (const nombre in rutasCurvas) {
+        const curve = rutasCurvas[nombre];
+        crearSuperficieCalle(curve, 20);
+        crearLineaDesplazada(curve, 4, 0x000000);
+        crearLineaDesplazada(curve, -4, 0x000000);
+        crearLineaDesplazada(curve, 0, 0xffff00);
+      }
+
+      // Crear semáforos: ajusta posiciones según tu mapa
+      crearSemaforo(new THREE.Vector3(0, 0, 0), "green");
+      crearSemaforo(new THREE.Vector3(20, 0, 20), "red");
+
+      // Leer configuración inicial
+      const numCars = parseInt(localStorage.getItem("config_numCars")) || 10;
+      const trafico = localStorage.getItem("config_trafico") || "moderado";
+
+      ajustarCantidadAutos(numCars);
+      ajustarTrafico(trafico);
+    })
+    .catch(err => console.error("Error al cargar rutas.json:", err));
+
+  // Ajustar cámara al cambiar tamaño ventana
+  window.addEventListener("resize", () => {
+    const canvas = renderer.domElement;
+    camera.aspect = canvas.clientWidth / canvas.clientHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+  });
+
+  renderer.render(scene, camera);
+}
+
+// --- NLP: enviar prompt al backend y ejecutar acciones ---
 async function enviarPrompt() {
   const inputValue = document.getElementById("instruction-input").value.trim();
   if (!inputValue) return console.warn("No hay instrucción para enviar.");
@@ -257,14 +300,13 @@ async function enviarPrompt() {
   }
 }
 
-//-----Eventos-----
-// Botones del frontend conectados al backend
+// --- Event Listeners para botones y controles ---
 document.getElementById("play-button").addEventListener("click", () => {
   fetch("http://localhost:8000/start")
     .then(res => res.json())
     .then(data => {
       console.log(data.status);
-      playSim();  // Activar animación solo si backend respondió correctamente
+      playSim();
     });
 });
 
@@ -273,7 +315,7 @@ document.getElementById("stop-button").addEventListener("click", () => {
     .then(res => res.json())
     .then(data => {
       console.log(data.status);
-      stopSim();  // Pausar animación
+      stopSim();
     });
 });
 
@@ -282,40 +324,55 @@ document.getElementById("reload-button").addEventListener("click", () => {
     .then(res => res.json())
     .then(data => {
       console.log(data.status);
-      reloadSim();  // Reiniciar animación
+      reloadSim();
     });
 });
 
-//document.getElementById("button-main").addEventListener("click", enviarPrompt);
-document.getElementById("send-button").addEventListener("click", enviarPrompt)
-
-// Iniciar
-init();
-
-// ----- Control de zoom -----
-let zoomLevel = 100; 
-const minZoom = 40;
-const maxZoom = 350;
-
-function setCameraZoom(newZoom) {
-  zoomLevel = Math.max(minZoom, Math.min(maxZoom, newZoom));
-  // Mantén la relación Y y Z para visión cenital
-  window.simulation.camera.position.set(0, zoomLevel, zoomLevel);
-  window.simulation.camera.lookAt(0, 0, 0);
-  window.simulation.renderer.render(window.simulation.scene, window.simulation.camera);
-}
-
-document.getElementById("zoom-in").addEventListener("click", function() {
+document.getElementById("zoom-in").addEventListener("click", () => {
   setCameraZoom(zoomLevel - 15);
 });
-document.getElementById("zoom-out").addEventListener("click", function() {
+
+document.getElementById("zoom-out").addEventListener("click", () => {
   setCameraZoom(zoomLevel + 20);
 });
 
-//-----Comunicacion entre frontend-backend-----s
-// Enviar configuración al backend
+document.getElementById("send-button").addEventListener("click", enviarPrompt);
+
+// --- Comunicación WebSocket para recibir comandos y configuraciones ---
+const socket = new WebSocket("ws://localhost:8000/ws");
+
+socket.onmessage = ({ data }) => {
+  const msg = JSON.parse(data);
+  console.log("Mensaje WebSocket:", msg);
+
+  if (msg.numCars !== undefined) ajustarCantidadAutos(msg.numCars);
+  if (msg.trafico) ajustarTrafico(msg.trafico);
+
+  if (msg.accion === "start") playSim();
+  else if (msg.accion === "stop") stopSim();
+  else if (msg.accion === "reload") reloadSim();
+
+  if (msg.accion === "cambiar_semaforo" && msg.estado) {
+    // Cambiar semáforos según msg.estado (implementa lógica si quieres)
+    semaforos.forEach(semaforo => {
+      if (semaforo.userData.state !== msg.estado) {
+        const color = msg.estado === "green" ? 0x00ff00 : 0xff0000;
+        semaforo.material.color.setHex(color);
+        semaforo.userData.state = msg.estado;
+      }
+    });
+  }
+};
+
+// --- Enviar comando desde input por WebSocket ---
+function enviarComando() {
+  const input = document.getElementById("input").value;
+  socket.send(input.trim().toLowerCase());
+}
+
+// --- Enviar configuración inicial al backend ---
 const numCars = localStorage.getItem("config_numCars") || "10";
-const trafico = localStorage.getItem("config_trafico") || "moderado"
+const trafico = localStorage.getItem("config_trafico") || "moderado";
 
 if (!numCars || !trafico) {
   alert("No se ha configurado la simulación. Redirigiendo...");
@@ -330,28 +387,9 @@ if (!numCars || !trafico) {
     })
   })
   .then(res => res.json())
-  .then(data => console.log("Cnfiguracion enviada", data));
+  .then(data => console.log("Configuración enviada", data));
 }
 
+// --- Inicializar todo ---
+init();
 
-const socket = new WebSocket("ws://localhost:8000/ws");
-
-socket.onmessage = ({ data }) => {
-  const msg = JSON.parse(data);
-  console.log("Mensaje WebSocket:", msg);
-
-  if (msg.numCars) ajustarCantidadAutos(msg.numCars);
-  if (msg.trafico) ajustarTrafico(msg.trafico);
-  if (msg.accion === "start") playSim();
-  else if (msg.accion === "stop") stopSim();
-  else if (msg.accion === "reload") reloadSim();
-  if (msg.accion === "cambiar_semaforo" && msg.estado) cambiarSemaforo(msg.estado);
-};
-
-
-
-
-function enviarComando() {
-  const input = document.getElementById("input").value;
-  socket.send(input.trim().toLowerCase());
-}
