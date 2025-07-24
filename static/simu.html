@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simulación con Rutas JSON y Autos GLB</title>
+    <style> body { margin: 0; overflow: hidden; } </style>
+</head>
+<body>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/loaders/GLTFLoader.js"></script>
+
+    <script>
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xa0d0ff);
+
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+    camera.position.set(0, 100, 100);
+    camera.lookAt(0, 0, 0);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+
+    scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+    const dirLight = new THREE.DirectionalLight(0xffffff, 0.6);
+    dirLight.position.set(30, 100, 30);
+    scene.add(dirLight);
+
+    const loader = new THREE.GLTFLoader();
+
+    const cars = [];
+    let rutas = {};
+    let rutasAutos = {};
+// Suelo negro
+const ground = new THREE.Mesh(
+    new THREE.PlaneGeometry(200, 200),
+    new THREE.MeshStandardMaterial({ color: 0x333333 })
+);
+ground.rotation.x = -Math.PI / 2;
+scene.add(ground);
+
+
+
+    function dibujarCalles() {
+        for (const calle in rutas) {
+            const puntos = rutas[calle];
+            for (let i = 0; i < puntos.length - 1; i++) {
+                const start = puntos[i];
+                const end = puntos[i + 1];
+
+                const material = new THREE.LineBasicMaterial({ color: 0xffff00 });
+                const geometry = new THREE.BufferGeometry().setFromPoints([
+                    new THREE.Vector3(start.x, 0.1, start.y),
+                    new THREE.Vector3(end.x, 0.1, end.y)
+                ]);
+                const line = new THREE.Line(geometry, material);
+                scene.add(line);
+            }
+        }
+    }
+
+    function crearAutoConRuta(nombreRuta) {
+        const calles = rutasAutos[nombreRuta];
+        if (!calles) return;
+
+        let ruta = [];
+        calles.forEach(nombreCalle => {
+            const puntos = rutas[nombreCalle];
+            if (puntos) {
+                ruta = ruta.concat(puntos.map(p => ({ x: p.x, z: p.y })));
+            }
+        });
+
+        if (ruta.length < 2) return;
+
+        const tempCar = new THREE.Mesh(
+            new THREE.BoxGeometry(2, 1, 4),
+            new THREE.MeshStandardMaterial({ color: Math.random() * 0xffffff })
+        );
+        tempCar.position.set(ruta[0].x, 0.5, ruta[0].z);
+        scene.add(tempCar);
+
+        const auto = {
+            model: tempCar,
+            ruta,
+            index: 0,
+            isTemp: true
+        };
+        cars.push(auto);
+
+        // Reemplazar por modelo GLB
+        loader.load('imagenes/car.glb', gltf => {
+            const car = gltf.scene;
+            car.scale.set(3.5, 3.5, 3.5);
+            car.position.set(ruta[0].x, 0.5, ruta[0].z);
+            car.rotation.y = tempCar.rotation.y;
+            scene.remove(tempCar);
+            scene.add(car);
+            auto.model = car;
+            auto.isTemp = false;
+        });
+    }
+
+    function cargarDatos() {
+        fetch('rutas.json')
+            .then(res => res.json())
+            .then(data => {
+                rutas = data;
+                dibujarCalles();
+                return fetch('rutas_autos.json');
+            })
+            .then(res => res.json())
+            .then(data => {
+                rutasAutos = data;
+
+                crearAutoConRuta("rutaA");
+                crearAutoConRuta("rutaB");
+                crearAutoConRuta("rutaC");
+                crearAutoConRuta("rutaD");
+                crearAutoConRuta("rutaE");
+            })
+            .catch(err => console.error("Error al cargar archivos JSON:", err));
+    }
+
+    const velocidad = 0.5;
+
+    function moverAuto(auto) {
+        if (auto.index >= auto.ruta.length - 1) {
+            auto.index = 0; // reinicia la ruta
+        }
+
+        const posActual = auto.model.position;
+        const puntoDestino = auto.ruta[auto.index + 1];
+        const dx = puntoDestino.x - posActual.x;
+        const dz = puntoDestino.z - posActual.z;
+        const distancia = Math.sqrt(dx * dx + dz * dz);
+
+        if (distancia < 0.5) {
+            auto.index++;
+            return;
+        }
+
+        const angulo = Math.atan2(dx, dz);
+        auto.model.rotation.y = angulo;
+
+        const stepX = (dx / distancia) * velocidad;
+        const stepZ = (dz / distancia) * velocidad;
+
+        auto.model.position.x += stepX;
+        auto.model.position.z += stepZ;
+    }
+
+    function animate() {
+        requestAnimationFrame(animate);
+        cars.forEach(moverAuto);
+        renderer.render(scene, camera);
+    }
+
+    cargarDatos();
+    animate();
+
+    window.addEventListener("resize", () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+    </script>
+</body>
+</html>
