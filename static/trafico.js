@@ -94,7 +94,7 @@ function init() {
   renderer.render(scene, camera);
 }
 
-// ✅ Crear autos
+// Crear autos
 function crearAutos(scene, cantidad, velocidadBase) {
   const colores = [0xff4444, 0x44ff44, 0x4488ff, 0xffff44];
 
@@ -121,7 +121,7 @@ function crearAutos(scene, cantidad, velocidadBase) {
   }
 }
 
-// ✅ Función para calcular velocidad base
+// Función para calcular velocidad base
 function calcularVelocidadBase(nivel) {
   switch (nivel.toLowerCase()) {
     case "fluido": return 0.1;
@@ -183,7 +183,7 @@ function animate() {
   animationId = requestAnimationFrame(animate);
 }
 
-// ✅ Ajustar número de autos dinámicamente
+// Ajustar número de autos dinámicamente
 function ajustarCantidadAutos(cantidad) {
   const { scene } = window.simulation;
 
@@ -198,7 +198,7 @@ function ajustarCantidadAutos(cantidad) {
   console.log(`Se ajustaron ${cantidad} autos en la simulación`);
 }
 
-// ✅ Ajustar nivel de tráfico dinámicamente
+// Ajustar nivel de tráfico dinámicamente
 function ajustarTrafico(nivel) {
   const velocidadBase = calcularVelocidadBase(nivel);
   for (let i = 0; i < carSpeeds.length; i++) {
