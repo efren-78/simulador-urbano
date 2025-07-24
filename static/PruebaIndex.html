@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Simulador de Tráfico</title>
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    /* Asegúrate de que el canvas tenga tamaño para que Three.js funcione bien */
+    #mapaCanvas {
+      width: 100%;
+      height: 600px;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div id="container">
+    <!-- Sidebar -->
+    <aside id="sidebar">
+      <nav class="menu">
+        <div class="sidebar-header">
+          <img class="icono-ciudad" src="imagenes/city.png" alt="Inicio" />
+          <div class="loop-wrapper animacion-inicio">
+            <div class="mountain"></div>
+            <div class="hill"></div>
+            <div class="tree"></div>
+            <div class="tree"></div>
+            <div class="tree"></div>
+            <div class="rock"></div>
+            <div class="truck"></div>
+            <div class="wheels"></div>
+          </div>
+        </div>
+        <div class="titulo-urbano">
+          TRÁFICO
+          <div class="flip">
+            <div><div>URBANO</div></div>
+            <div><div>URBANO</div></div>
+            <div><div>URBANO</div></div>
+          </div>
+        </div>
+        <div class="traffic-slider">
+          <label for="traffic">TRÁFICO</label>
+          <input type="range" id="traffic" min="1" max="3" step="1" value="1">
+          <div class="labels">
+            <span>F</span>
+            <span>M</span>
+            <span>C</span>
+          </div>
+        </div>
+      </nav>
+    </aside>
+
+    <!-- Contenido principal -->
+    <main id="main-content">
+      <div id="top-bar">
+        <div class="input-section">
+          <input type="text" id="instruction-input" placeholder="Escribe o di una instrucción..." />
+          <button id="mic-button"><img src="imagenes/circle-microphone.png" alt="Micrófono" /></button>
+          <button id="send-button"><img src="imagenes/paper-plane-top.png" alt="Enviar" /></button>
+        </div>
+        <div class="controls2">
+          <button id="play-button"><img src="imagenes/play-circle.png" alt="Play" /></button>
+          <button id="stop-button"><img src="imagenes/stop-circle.png" alt="Stop" /></button>
+          <button id="reload-button"><img src="imagenes/reload.png" alt="Reload" /></button>
+          <!-- Aquí agrego botones para zoom -->
+          <button id="zoom-in">Zoom +</button>
+          <button id="zoom-out">Zoom -</button>
+        </div>
+      </div>
+
+      <!-- Canvas de Three.js -->
+      <canvas id="mapaCanvas"></canvas>
+
+      <!-- Semáforo -->
+      <div class="semaforo-overlay">
+        <div class="semaforo-poste-container">
+          <div class="semaforo">
+            <button class="luces-circulo red" color="red" aria-label="Semáforo rojo"></button>
+            <button class="luces-circulo" color="yellow" aria-label="Semáforo amarillo"></button>
+            <button class="luces-circulo" color="green" aria-label="Semáforo verde"></button>
+          </div>
+          <div class="poste"></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+
+  <!-- Reconocimiento de voz y monitoreo -->
+  <script>
+    (function () {
+      const micBtn = document.getElementById("mic-button");
+      const inputField = document.getElementById("instruction-input");
+
+      if ('webkitSpeechRecognition' in window) {
+        const recognition = new webkitSpeechRecognition();
+        recognition.lang = 'es-ES';
+        recognition.continuous = false;
+        recognition.interimResults = false;
+
+        micBtn.addEventListener('click', () => recognition.start());
+        recognition.onresult = (event) => {
+          inputField.value = event.results[0][0].transcript;
+        };
+        recognition.onerror = (event) => console.error("Error en reconocimiento de voz:", event.error);
+      } else {
+        console.warn("Reconocimiento de voz no soportado.");
+      }
+    })();
+
+    async function obtenerEstado() {
+      try {
+        const res = await fetch("http://localhost:8000/estado");
+        const data = await res.json();
+        console.log("Estado:", data);
+      } catch (error) {
+        console.warn("No se pudo obtener el estado:", error);
+      }
+    }
+    setInterval(obtenerEstado, 2000);
+  </script>
+</body>
+</html>
