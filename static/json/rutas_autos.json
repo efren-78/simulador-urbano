@@ -1,6 +1,12 @@
 {
-  "rutaA": ["calle1", "calle4", "calle5"],
-  "rutaB": ["calle1", "calle2", "calle6", "calle7"],
-  "rutaC": ["calle1", "calle2", "calle3", "calle8", "calle9" ]
+  "rutaA": ["la14"],
+  "rutaB": ["av_sanfrancisco1", "la18-1", "la18-2", ""],
+  "rutaC": ["av_sanignacio1", "rio-panuco", "bou_circun2", "bou_circun3", "bou_circun4"],
+  "rutaD": ["la14-2", "la14-1", "av_sanfrancisco1", "av_francis1", "av_francis2", "rio-tuxpan2_inv", "av_sanignacio3-2", "av_sanignacio3-2"]
+
+
  
 }
+
+
+

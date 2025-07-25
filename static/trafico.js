@@ -48,7 +48,7 @@ async function cargarModeloCar() {
     loader.load('models/car.glb', (gltf) => {
       console.log('Modelo GLB cargado');
       const model = gltf.scene;
-      model.scale.set(2.5, 2.5, 2.5);
+      model.scale.set(3.5, 3.5, 3.5);
       resolve(model);
     }, undefined, reject);
   });
@@ -71,7 +71,7 @@ async function cargarModeloCar() {
 //Corregir posicion, falta modelado 3d
 function crearSemaforo(position, initialState = "red") {
   const color = initialState === "green" ? 0x00ff00 : 0xff0000;
-  const geometry = new THREE.BoxGeometry(0.5, 2, 0.5);
+  const geometry = new THREE.BoxGeometry(4, 4, 4);
   const material = new THREE.MeshPhongMaterial({ color });
   const semaforo = new THREE.Mesh(geometry, material);
   semaforo.position.set(position.x, 1, position.z);
@@ -101,8 +101,8 @@ function crearAutos(cantidad, velocidadBase) {
   }
 }
 
-//Dibujo de calles dinamica a base de json
 function dibujarCallesDesdeJSON() {
+  // Eliminar las calles anteriores
   callesMeshes.forEach(mesh => scene.remove(mesh));
   callesMeshes.length = 0;
 
@@ -116,23 +116,56 @@ function dibujarCallesDesdeJSON() {
     const dx = p2.x - p1.x;
     const dy = p2.y - p1.y;
     const longitud = Math.sqrt(dx * dx + dy * dy);
-    const ancho = 5;
+    const ancho = 1;
+
     const angulo = Math.atan2(dy, dx);
     const posX = (p1.x + p2.x) / 2;
     const posZ = (p1.y + p2.y) / 2;
 
-    const geometry = new THREE.PlaneGeometry(longitud, ancho);
-    const material = new THREE.MeshPhongMaterial({ color: 0x2c2c2c });
-    const calleMesh = new THREE.Mesh(geometry, material);
+    // Calle amarilla
+    const geometryAmarilla = new THREE.PlaneGeometry(longitud, ancho);
+    const materialAmarilla = new THREE.MeshBasicMaterial({
+      color: 0xffff00,
+      side: THREE.DoubleSide
+    });
 
-    calleMesh.rotation.x = -Math.PI / 2;
-    calleMesh.rotation.z = -angulo;
-    calleMesh.position.set(posX, 0, posZ);
+    const meshAmarillo = new THREE.Mesh(geometryAmarilla, materialAmarilla);
+    meshAmarillo.rotation.x = -Math.PI / 2;
+    meshAmarillo.rotation.z = -angulo;
+    meshAmarillo.position.set(posX, 0.01, posZ);
+    scene.add(meshAmarillo);
+    callesMeshes.push(meshAmarillo);
 
-    scene.add(calleMesh);
-    callesMeshes.push(calleMesh);
+    // Borde lateral negro (ambos lados)
+    const offset = 1.9; // Distancia lateral del borde desde el centro
+    const offsetX = -Math.sin(angulo) * offset;
+    const offsetZ = Math.cos(angulo) * offset;
+
+    const geometryBorde = new THREE.PlaneGeometry(longitud, 3); // Borde delgado
+    const materialBorde = new THREE.MeshBasicMaterial({
+      color: 0x000000,
+      side: THREE.DoubleSide
+    });
+
+    // Borde derecho
+    const bordeDerecho = new THREE.Mesh(geometryBorde, materialBorde);
+    bordeDerecho.rotation.x = -Math.PI / 2;
+    bordeDerecho.rotation.z = -angulo;
+    bordeDerecho.position.set(posX + offsetX, 0.011, posZ + offsetZ);
+    scene.add(bordeDerecho);
+    callesMeshes.push(bordeDerecho);
+
+    // Borde izquierdo
+    const bordeIzquierdo = new THREE.Mesh(geometryBorde, materialBorde);
+    bordeIzquierdo.rotation.x = -Math.PI / 2;
+    bordeIzquierdo.rotation.z = -angulo;
+    bordeIzquierdo.position.set(posX - offsetX, 0.011, posZ - offsetZ);
+    scene.add(bordeIzquierdo);
+    callesMeshes.push(bordeIzquierdo);
   });
 }
+
+
 
 
 // ----- Animacion -----
@@ -200,10 +233,10 @@ function moverAutos(delta) {
 
 function calcularVelocidadBase(nivel) {
   switch (nivel.toLowerCase()) {
-    case "fluido": return 0.01;
-    case "moderado": return 0.006;
-    case "congestionado": return 0.003;
-    default: return 0.006;
+    case "fluido": return 0.001;
+    case "moderado": return 0.0006;
+    case "congestionado": return 0.0003;
+    default: return 0.001;
   }
 }
 
@@ -263,7 +296,42 @@ async function init() {
 
 
   scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x87CEEB);
+
+
+  const loader = new THREE.TextureLoader();
+loader.load(
+  'imagenes/Cielo4.png',
+  function (texture) {
+    console.log('✅ Imagen cargada correctamente');
+    scene.background = texture;
+  },
+  undefined,
+  function (err) {
+    console.error('❌ Error cargando la imagen', err);
+  }
+);
+
+
+
+  const textureLoader = new THREE.TextureLoader();
+const groundTexture = textureLoader.load('imagenes/suelo.png');
+
+groundTexture.wrapS = THREE.RepeatWrapping;
+groundTexture.wrapT = THREE.RepeatWrapping;
+groundTexture.repeat.set(10, 10); // Repetir la textura en el suelo
+
+const groundMaterial = new THREE.MeshStandardMaterial({
+  map: groundTexture
+});
+
+const ground = new THREE.Mesh(
+  new THREE.PlaneGeometry(200, 200),
+  groundMaterial
+);
+ground.rotation.x = -Math.PI / 2;
+scene.add(ground);
+
+
 
   const canvas = document.getElementById("mapaCanvas");
   renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
@@ -280,10 +348,10 @@ async function init() {
   dibujarCallesDesdeJSON();
   
 
-  crearSemaforo({ x: 0, z: 0 }, "green");
-  crearSemaforo({ x: 10, z: -10 }, "red");
+  crearSemaforo({ x: -90, z: 0 }, "green");
+  crearSemaforo({ x: -5, z: -80 }, "red");
 
-  const numCars = 10; // Lo ajusta backend después
+  const numCars = 5; // Lo ajusta backend después
   const trafico = "moderado";
   crearAutos(numCars, calcularVelocidadBase(trafico));
 
