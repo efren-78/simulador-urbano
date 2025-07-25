@@ -11,6 +11,10 @@ const clock = new THREE.Clock();
 let zoomLevel = 100;
 let rutasAutos = {};
 const callesMeshes = [];
+let modoAgregarBloqueo = false;
+let modoEliminarBloqueo = false;
+const bloqueos = [];
+const bloqueoMeshes = [];
 
 // ----- CARGA DE RECURSOS -----
 //Carpeta /json
@@ -99,6 +103,19 @@ function crearAutos(cantidad, velocidadBase) {
     carSpeeds.push(velocidadBase + Math.random() * 0.02);
     scene.add(clone);
   }
+}
+
+//Obstruccion en calles
+function crearBloqueo(scene, position, radio = 5) {
+  const geometry = new THREE.CircleGeometry(radio, 32);
+  const material = new THREE.MeshBasicMaterial({ color: 0xffaa00, opacity: 0.5, transparent: true });
+  const bloqueo = new THREE.Mesh(geometry, material);
+  bloqueo.rotation.x = -Math.PI / 2;
+  bloqueo.position.set(position.x, 0.01, position.z);
+  scene.add(bloqueo);
+
+  bloqueos.push({ position, radio });
+  bloqueoMeshes.push(bloqueo);
 }
 
 function dibujarCallesDesdeJSON() {
@@ -203,9 +220,16 @@ function moverAutos(delta) {
     const speed = carSpeeds[i];
     let detener = false;
 
+    // Verificar semáforos
     semaforos.forEach(semaforo => {
       const dist = car.position.distanceTo(semaforo.position);
       if (dist < 3 && semaforo.userData.state === "red") detener = true;
+    });
+
+    // Verificar bloqueos
+    bloqueos.forEach(b => {
+      const dist = car.position.distanceTo(new THREE.Vector3(b.position.x, 0, b.position.z));
+      if (dist < b.radio) detener = true;
     });
 
     if (!detener) {
@@ -229,6 +253,7 @@ function moverAutos(delta) {
       car.rotation.y = -angle;
     }
   });
+
 }
 
 function calcularVelocidadBase(nivel) {
@@ -330,6 +355,7 @@ const ground = new THREE.Mesh(
 );
 ground.rotation.x = -Math.PI / 2;
 scene.add(ground);
+ground.userData.type = "ground";
 
 
 
@@ -370,6 +396,68 @@ document.getElementById("stop-button").addEventListener("click", () => {
 document.getElementById("reload-button").addEventListener("click", () => {
   fetch("http://localhost:8000/reload").then(res => res.json()).then(() => reloadSim());
 });
+
+document.getElementById("add-bloqueo").addEventListener("click", () => {
+  modoAgregarBloqueo = true;
+  modoEliminarBloqueo = false;
+  console.log("Modo: agregar bloqueo");
+});
+
+document.getElementById("remove-bloqueo").addEventListener("click", () => {
+  modoEliminarBloqueo = true;
+  modoAgregarBloqueo = false;
+  console.log("Modo: eliminar bloqueo");
+});
+
+document.getElementById("clear-bloqueos").addEventListener("click", () => {
+  bloqueos.length = 0;
+  bloqueoMeshes.forEach(mesh => scene.remove(mesh));
+  bloqueoMeshes.length = 0;
+  console.log("Todos los bloqueos eliminados");
+});
+
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+
+document.getElementById("mapaCanvas").addEventListener("click", (event) => {
+  const rect = event.target.getBoundingClientRect();
+  const canvas = event.target;
+  mouse.x = ((event.clientX - rect.left) / canvas.clientWidth) * 2 - 1;
+  mouse.y = -((event.clientY - rect.top) / canvas.clientHeight) * 2 + 1;
+
+
+  raycaster.setFromCamera(mouse, camera);
+  const intersects = raycaster.intersectObjects(scene.children, true);
+
+  if (modoAgregarBloqueo) {
+    // Agregar bloqueo solo en el suelo
+    const suelo = intersects.find(obj => obj.object.userData.type === "ground");
+
+    if (suelo) {
+      const punto = suelo.point;
+      crearBloqueo(scene, { x: punto.x, z: punto.z }, 6);
+      console.log(`Bloqueo agregado en X=${punto.x.toFixed(2)}, Z=${punto.z.toFixed(2)}`);
+    }
+    modoAgregarBloqueo = false;
+  }
+
+  if (modoEliminarBloqueo) {
+    // Eliminar si se clickea un bloqueo
+    const bloqueoHit = intersects.find(obj => bloqueoMeshes.includes(obj.object));
+
+    if (bloqueoHit) {
+      const index = bloqueoMeshes.indexOf(bloqueoHit.object);
+      if (index !== -1) {
+        scene.remove(bloqueoMeshes[index]);
+        bloqueoMeshes.splice(index, 1);
+        bloqueos.splice(index, 1);
+        console.log(`Bloqueo eliminado en índice ${index}`);
+      }
+    }
+    modoEliminarBloqueo = false;
+  }
+});
+
 
 //document.getElementById("button-main").addEventListener("click", enviarPrompt);
 document.getElementById("send-button").addEventListener("click", enviarPrompt)
