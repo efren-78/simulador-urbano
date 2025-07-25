@@ -1,7 +1,8 @@
-    import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
-    import { GLTFLoader } from 'https://unpkg.com/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
+import * as THREE from './libs/three.module.js';
+import { GLTFLoader } from './libs/GLTFLoader.js';
 
-    let scene, camera, renderer;
+const scene = new THREE.Scene();
+    let camera, renderer;
     let running = false;
     let animationId;
 
