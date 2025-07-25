@@ -1,12 +1,26 @@
 {
   "rutaA": ["la14"],
-  "rutaB": ["av_sanfrancisco1", "la18-1", "la18-2", ""],
+  "rutaB": ["av_sanfrancisco1", "la18-1", "la18-2"],
   "rutaC": ["av_sanignacio1", "rio-panuco", "bou_circun2", "bou_circun3", "bou_circun4"],
-  "rutaD": ["la14-2", "la14-1", "av_sanfrancisco1", "av_francis1", "av_francis2", "rio-tuxpan2_inv", "av_sanignacio3-2", "av_sanignacio3-2"]
+  "rutaD": ["la14-2", "la14-1", "av_sanfrancisco1", "av_francis1", "av_francis2", "rio-tuxpan2_inv", "av_sanignacio3-2", "av_sanignacio4-2"],
 
+  "rutaE": ["av_sanfrancisco1", "rio-verde2", "bou_circun10", "bou_circun11", "bou_circun12"],
+  "rutaF": ["av_francis6", "la22-1", "la22-2", "bou_circun12"],
+  "rutaG": ["av_francis3", "rio-tuxpan2", "rio-tuxpan", "bou_circun9"],
+  "rutaH": ["av_sanignacio2", "rio-colorado", "bou_circun5", "bou_circun6"],
+  "rutaI": ["av_francis4", "rio-salado2", "rio-salado", "bou_circun8"],
+  "rutaJ": ["la18-3", "la18-4", "bou_circun7", "bou_circun8"],
+  "rutaK": ["rio-bravo2", "rio-bravo", "bou_circun10", "bou_circun11"],
+  "rutaL": ["av_sanignacio4-2", "rio-jamapa2", "rio-jamapa", "bou_circun12"],
+  "rutaM": ["av_francis2", "rio-verde2", "rio-verde", "bou_circun9"],
 
- 
+  "rutaN": ["av_francis5", "rio-jamapa2", "rio-jamapa", "bou_circun12"],
+  "rutaO": ["av_sanignacio5", "rio-cazones", "bou_circun4", "bou_circun5"],
+  "rutaP": ["av_sanignacio6", "rio-balsas", "bou_circun5", "bou_circun6"],
+  "rutaQ": ["av_francis1", "rio-bravo2", "rio-bravo", "bou_circun7"],
+  "rutaR": ["av_francis6", "rio-salado2", "rio-salado", "bou_circun11"],
+  "rutaS": ["la18-1", "rio-colorado", "bou_circun3", "bou_circun4"],
+  "rutaT": ["la22-1", "rio-tuxpan2", "rio-tuxpan", "bou_circun9"],
+  "rutaU": ["av_sanignacio3", "rio-verde", "bou_circun8", "bou_circun9"],
+  "rutaV": ["la14-2", "rio-balsas", "bou_circun6", "bou_circun7"]
 }
-
-
-

@@ -232,6 +232,26 @@ function moverAutos(delta) {
       if (dist < b.radio) detener = true;
     });
 
+    // Verificar si la ruta del auto tiene bloqueo
+    if (rutaTieneBloqueo(puntos)) {
+      detener = true;
+
+      // Si no tiene temporizador, lo creamos
+      if (!car.userData.waitStart) {
+        car.userData.waitStart = performance.now();
+      } else {
+        const elapsed = (performance.now() - car.userData.waitStart) / 1000; // en segundos
+        if (elapsed >= 3) {
+          cambiarRutaAuto(car);
+          car.userData.waitStart = null; // reiniciamos temporizador
+        }
+      }
+    } else {
+      // Si ya no hay bloqueo, limpiamos el temporizador
+      car.userData.waitStart = null;
+    }
+
+
     if (!detener) {
       let p1 = puntos[index];
       let p2 = puntos[index + 1];
@@ -290,6 +310,36 @@ function reloadSim() {
   renderer.render(scene, camera);
 }
 
+//----- Operaciones extra -----
+function rutaTieneBloqueo(ruta) {
+  return ruta.some(punto => {
+    return bloqueos.some(b => {
+      const dist = new THREE.Vector3(punto.x, 0, punto.y)
+        .distanceTo(new THREE.Vector3(b.position.x, 0, b.position.z));
+      return dist < b.radio;
+    });
+  });
+}
+
+function cambiarRutaAuto(car) {
+  const rutasKeys = Object.keys(rutasAutos);
+  const rutasDisponibles = rutasKeys.filter(key => {
+    const callesDeRuta = rutasAutos[key].map(c => calles[c]).flat();
+    return !rutaTieneBloqueo(callesDeRuta);
+  });
+
+  if (rutasDisponibles.length > 0) {
+    const nuevaRutaKey = rutasDisponibles[Math.floor(Math.random() * rutasDisponibles.length)];
+    const nuevaRuta = rutasAutos[nuevaRutaKey].map(c => calles[c]).flat();
+    car.userData.ruta = nuevaRuta;
+    car.userData.index = 0;
+    car.userData.t = 0;
+    console.log(`Auto reasignado a ruta: ${nuevaRutaKey}`);
+  } else {
+    console.warn("No hay rutas alternativas disponibles");
+  }
+}
+
 // -----Procesamiento de prompteo-----
 async function enviarPrompt() {
   const inputValue = document.getElementById("instruction-input").value.trim();
@@ -324,28 +374,28 @@ async function init() {
 
 
   const loader = new THREE.TextureLoader();
-loader.load(
-  'imagenes/Cielo4.png',
-  function (texture) {
-    console.log('✅ Imagen cargada correctamente');
-    scene.background = texture;
-  },
-  undefined,
-  function (err) {
-    console.error('❌ Error cargando la imagen', err);
-  }
-);
+  loader.load(
+    'imagenes/Cielo4.png',
+    function (texture) {
+      console.log('✅ Imagen cargada correctamente');
+      scene.background = texture;
+    },
+    undefined,
+    function (err) {
+      console.error('❌ Error cargando la imagen', err);
+    }
+  );
 
 
 
   const textureLoader = new THREE.TextureLoader();
-const groundTexture = textureLoader.load('imagenes/suelo.png');
+  const groundTexture = textureLoader.load('imagenes/suelo.png');
 
-groundTexture.wrapS = THREE.RepeatWrapping;
-groundTexture.wrapT = THREE.RepeatWrapping;
-groundTexture.repeat.set(10, 10); // Repetir la textura en el suelo
+  groundTexture.wrapS = THREE.RepeatWrapping;
+  groundTexture.wrapT = THREE.RepeatWrapping;
+  groundTexture.repeat.set(10, 10); // Repetir la textura en el suelo
 
-const groundMaterial = new THREE.MeshStandardMaterial({
+  const groundMaterial = new THREE.MeshStandardMaterial({
   map: groundTexture
 });
 
