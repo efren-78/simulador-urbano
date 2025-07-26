@@ -1,16 +1,14 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Simulador de Tráfico - Configuración</title>
   <link rel="stylesheet" href="style2.css">
+  <link rel="icon" type="image/x-icon" href="imagenes/favicon.ico" />
 
 </head>
 <body>
-  <!-- Fondo difuso, opcional -->
-  <img src="imagenes/azul.jpg" alt="Fondo" class="background-img" />
 
   <div class="dashboard-center">
     <form class="glass-panel" onsubmit="iniciarSimulador(); return false;">
@@ -41,7 +39,7 @@
     </form>
   </div>
 
-  <!-- Botón flotante para abrir el chatbot -->
+<!-- Botón flotante para abrir el chatbot -->
   <button id="openBot" title="Ayuda">
     <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -51,12 +49,12 @@
 
   <!-- Chatbot ventana -->
   <div id="botWindow">
-    <div class="flex items-center justify-between bg-blue-800 rounded-t-2xl p-4">
+    <div class="chat-header">
       <span class="text-white font-bold">Asistente NeuroTraffic</span>
-      <button id="closeBot" class="text-white text-2xl leading-none hover:text-red-300" style="background:transparent;border:none;">&times;</button>
+      <button id="closeBot" class="close-chat">&times;</button>
     </div>
-    <div id="botMessages" class="p-4 h-60 overflow-y-auto text-gray-100 text-base space-y-4" style="background: #22304b;">
-      <div class="bg-blue-100/30 p-3 rounded-xl shadow text-white">
+  <div id="botMessages" class="chat-messages">
+    <div class="bot-message">
         ¡Hola! 👋 Soy tu asistente.<br>
         <b>¿Cómo puedo ayudarte con el simulador?</b><br><br>
         Por ejemplo:<br>
@@ -66,10 +64,9 @@
         • Si tienes dudas, escríbeme aquí.<br>
       </div>
     </div>
-    <div class="p-3 flex gap-2 border-t border-blue-100/20">
-      <input id="botInput" type="text" placeholder="Escribe aquí tu duda..."
-        class="flex-1 rounded-xl px-3 py-2 border border-blue-200 text-black focus:outline-none focus:ring-2 focus:ring-blue-400 transition">
-      <button id="botSend" class="bg-blue-700 text-white px-4 py-2 rounded-xl hover:bg-blue-800 transition" style="border:none;">Enviar</button>
+   <div class="chat-input-area">
+    <input id="botInput" type="text" placeholder="Escribe aquí tu duda...">
+    <button id="botSend">Enviar</button>
     </div>
   </div>
 
@@ -112,6 +109,6 @@
   document.getElementById('closeBot').onclick = () =>
     document.getElementById('botWindow').classList.remove('active');
   </script>
-  <!-- Si necesitas chatbot.js agrégalo aquí -->
+  <script src="chatbot.js"></script>
 </body>
 </html>

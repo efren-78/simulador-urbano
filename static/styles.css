@@ -109,6 +109,16 @@ body {
   opacity: 1;
 }
 
+#sidebar:not(:hover) .menu button {
+  justify-content: center;
+  padding: 12px;
+}
+
+#sidebar:not(:hover) .menu button span {
+  display: none;
+}
+
+
 #sidebar .titulo-urbano {
   opacity: 0;
   transition: opacity 0.3s ease;
@@ -622,9 +632,9 @@ input[type='checkbox']:checked + label .lil_arrow {
 }
 .semaforo-overlay {
     position: fixed;
-    top: 340px;   
-    left: 1080px; 
-    z-index: 2000;
+    top: 540px;   
+    left: 1350px; 
+    z-index: 2100;
     pointer-events: none;
 }
 .semaforo-overlay .semaforo,
