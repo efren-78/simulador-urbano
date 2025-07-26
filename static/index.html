@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Simulador de Tráfico</title>
   <link rel="stylesheet" href="styles.css" />
+  <link rel="icon" type="image/x-icon" href="imagenes/favicon.ico" />
 </head>
 <body>
   <div id="container">
@@ -35,6 +36,14 @@
           </div>
         </div>
 
+
+         <!-- Botones Bloqueos -->
+        <div class="controls-bloqueo">
+          <button id="add-bloqueo"> <img src="imagenes/agregar.png" alt="+" /><span>Agregar bloqueo</span></button>
+          <button id="remove-bloqueo"> <img src="imagenes/eliminar.png" alt="-" /><span>Eliminar bloqueo</span></button>
+          <button id="clear-bloqueo"> <img src="imagenes/quitar.png" alt="*" /><span>Quitar todos</span></button>
+        </div>
+
         <!-- Slider de tráfico -->
         <div class="traffic-slider">
           <label for="traffic">TRÁFICO</label>
@@ -63,12 +72,7 @@
           <button id="reload-button"><img src="imagenes/reload.png" alt="Reload" /></button>
         </div>
 
-        <!-- Botones Blñoqueos -->
-        <div class="controls-bloqueo">
-          <button id="add-bloqueo">Agregar bloqueo</button>
-          <button id="remove-bloqueo">Eliminar bloqueo</button>
-          <button id="clear-bloqueos">Quitar todos</button>
-        </div>
+       
       </div>
 
       <!-- Zoom -->
@@ -88,6 +92,7 @@
           </div>
           <div class="poste"></div>
         </div>
+        <script src="script.js"></script>
       </div>
     </main>
   </div>
