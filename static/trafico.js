@@ -45,18 +45,6 @@ async function cargarRutasAutos() {
   }
 }
 
-//Carpeta /models
-async function cargarModeloCar() {
-  return new Promise((resolve, reject) => {
-    const loader = new THREE.GLTFLoader();
-    loader.load('models/car.glb', (gltf) => {
-      console.log('Modelo GLB cargado');
-      const model = gltf.scene;
-      model.scale.set(3.5, 3.5, 3.5);
-      resolve(model);
-    }, undefined, reject);
-  });
-}
 
 
 // ----- CREACIÓN DE ELEMENTOS -----
@@ -74,36 +62,128 @@ async function cargarModeloCar() {
 //Semaforo simple
 //Corregir posicion, falta modelado 3d
 function crearSemaforo(position, initialState = "red") {
-  const color = initialState === "green" ? 0x00ff00 : 0xff0000;
-  const geometry = new THREE.BoxGeometry(4, 4, 4);
-  const material = new THREE.MeshPhongMaterial({ color });
-  const semaforo = new THREE.Mesh(geometry, material);
-  semaforo.position.set(position.x, 1, position.z);
-  semaforo.userData = { state: initialState };
-  scene.add(semaforo);
-  semaforos.push(semaforo);
+  const colores = {
+    red: 0xff0000,
+    yellow: 0xffff00,
+    green: 0x00ff00
+  };
+
+  const grupo = new THREE.Group();
+
+  // Poste
+  const poste = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.2, 0.2, 8),
+    new THREE.MeshStandardMaterial({ color: 0x333333 })
+  );
+  poste.position.y = 4;
+  grupo.add(poste);
+
+  // Caja del semáforo
+  const caja = new THREE.Mesh(
+    new THREE.BoxGeometry(1, 3, 1),
+    new THREE.MeshStandardMaterial({ color: 0x000000 })
+  );
+  caja.position.y = 6;
+  grupo.add(caja);
+
+  // Luces (esferas)
+  const estados = ["red", "yellow", "green"];
+  estados.forEach((estado, i) => {
+    const luz = new THREE.Mesh(
+      new THREE.SphereGeometry(0.3, 16, 16),
+      new THREE.MeshStandardMaterial({
+        color: colores[estado],
+        emissive: initialState === estado ? colores[estado] : 0x000000
+      })
+    );
+    luz.position.set(0, 6.9 - i * 0.9, 0.6); // Posiciones verticales dentro de la caja
+    luz.name = estado;
+    grupo.add(luz);
+  });
+
+  grupo.position.set(position.x, 0, position.z);
+  grupo.scale.set(5, 5, 5); // ⬅️ Aumenta el tamaño 5 veces
+  grupo.userData.state = initialState;
+
+  scene.add(grupo);
+  semaforos.push(grupo);
 }
 
 
+
+function createCar(color) {
+  const carGroup = new THREE.Group();
+
+  // Cuerpo del coche
+  const bodyGeometry = new THREE.BoxGeometry(4, 1.5, 2);
+  const bodyMaterial = new THREE.MeshLambertMaterial({ color: color });
+  const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+  body.position.y = 1;
+  body.castShadow = true;
+  carGroup.add(body);
+
+  // Techo
+  const roofGeometry = new THREE.BoxGeometry(2.5, 1, 1.8);
+  const roofMaterial = new THREE.MeshLambertMaterial({ color: color });
+  const roof = new THREE.Mesh(roofGeometry, roofMaterial);
+  roof.position.set(0, 2, 0);
+  roof.castShadow = true;
+  carGroup.add(roof);
+
+  // Ruedas
+  const wheelGeometry = new THREE.CylinderGeometry(0.4, 0.4, 0.3, 16);
+  const wheelMaterial = new THREE.MeshLambertMaterial({ color: 0x222222 });
+
+  const positions = [
+    { x: 1.3, y: 0.4, z: 1.2 },
+    { x: 1.3, y: 0.4, z: -1.2 },
+    { x: -1.3, y: 0.4, z: 1.2 },
+    { x: -1.3, y: 0.4, z: -1.2 }
+  ];
+
+  positions.forEach(pos => {
+    const wheel = new THREE.Mesh(wheelGeometry, wheelMaterial);
+    wheel.position.set(pos.x, pos.y, pos.z);
+    wheel.rotation.z = Math.PI / 2;
+    wheel.castShadow = true;
+    carGroup.add(wheel);
+  });
+carGroup.scale.set(2, 2, 2); // Escala el auto 1.5 veces más grande
+
+  return {
+    group: carGroup
+  };
+}
+
 function crearAutos(cantidad, velocidadBase) {
   const rutasKeys = Object.keys(rutasAutos);
+  const colores = [0xFF0000, 0x0000FF, 0x00FF00, 0xFFFF00, 0xFF00FF, 0x00FFFF, 0xFFA500, 0x800080];
 
   for (let i = 0; i < cantidad; i++) {
     const rutaSeleccionada = rutasKeys[i % rutasKeys.length];
     const callesDeRuta = rutasAutos[rutaSeleccionada]
       .map(c => calles[c])
-      .filter(calle => calle); // Filtra calles inexistentes
+      .filter(calle => calle); // Asegura que existan las calles
     const puntos = callesDeRuta.flat();
+    if (puntos.length < 2) continue;
 
-    const clone = carModel.clone(true);
-    clone.position.set(puntos[0].x, 0.5, puntos[0].y);
-    clone.userData = { ruta: puntos, index: 0, t: 0 };
-    cars.push(clone);
+    const color = colores[i % colores.length];
+    const auto = createCar(color); // usa el auto hecho con geometría simple
+    auto.group.position.set(puntos[0].x, 0.5, puntos[0].y); // posición inicial
+
+    auto.group.userData = {
+      ruta: puntos,
+      index: 0,
+      t: 0
+    };
+
+    cars.push(auto.group);
     carRoutes.push(puntos);
     carSpeeds.push(velocidadBase + Math.random() * 0.02);
-    scene.add(clone);
+    scene.add(auto.group);
   }
 }
+
 
 //Obstruccion en calles
 function crearBloqueo(scene, position, radio = 5) {
@@ -191,6 +271,8 @@ function animate() {
   const delta = clock.getDelta();
 
   actualizarSemaforos();
+
+  actualizarSemaforos();
   moverAutos(delta);
 
   renderer.render(scene, camera);
@@ -204,14 +286,25 @@ function actualizarSemaforos() {
   if (time % 10 < 4) state = "green";
   else if (time % 10 < 5) state = "yellow";
 
+  const colores = {
+    red: 0xff0000,
+    yellow: 0xffff00,
+    green: 0x00ff00
+  };
+
   semaforos.forEach(semaforo => {
-    let color = 0xff0000;
-    if (state === "green") color = 0x00ff00;
-    else if (state === "yellow") color = 0xffff00;
-    semaforo.material.color.setHex(color);
+    const estados = ["red", "yellow", "green"];
+    estados.forEach(color => {
+      const luz = semaforo.getObjectByName(color);
+      if (luz && luz.material && luz.material.emissive) {
+        luz.material.emissive.setHex(color === state ? colores[color] : 0x000000);
+      }
+    });
     semaforo.userData.state = state;
   });
 }
+
+
 
 function moverAutos(delta) {
   cars.forEach((car, i) => {
@@ -367,7 +460,6 @@ async function enviarPrompt() {
 async function init() {
   await cargarCalles();
   await cargarRutasAutos();
-  carModel = await cargarModeloCar();
 
 
   scene = new THREE.Scene();
@@ -375,7 +467,7 @@ async function init() {
 
   const loader = new THREE.TextureLoader();
   loader.load(
-    'imagenes/Cielo4.png',
+    'imagenes/cielo4.png',
     function (texture) {
       console.log('✅ Imagen cargada correctamente');
       scene.background = texture;
@@ -389,7 +481,7 @@ async function init() {
 
 
   const textureLoader = new THREE.TextureLoader();
-  const groundTexture = textureLoader.load('imagenes/suelo.png');
+  const groundTexture = textureLoader.load('imagenes/pasto.jpg');
 
   groundTexture.wrapS = THREE.RepeatWrapping;
   groundTexture.wrapT = THREE.RepeatWrapping;
@@ -424,8 +516,8 @@ ground.userData.type = "ground";
   dibujarCallesDesdeJSON();
   
 
-  crearSemaforo({ x: -90, z: 0 }, "green");
-  crearSemaforo({ x: -5, z: -80 }, "red");
+  crearSemaforo({ x: -92, z: 0 }, "green");
+  crearSemaforo({ x: -5, z: -82 }, "red");
 
   const numCars = 5; // Lo ajusta backend después
   const trafico = "moderado";
