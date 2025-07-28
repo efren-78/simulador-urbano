@@ -45,6 +45,55 @@ async function cargarRutasAutos() {
   }
 }
 
+function crearEscuela(posicion = { x: 0, z: 0 }, escala = 1) {
+  const grupo = new THREE.Group();
+
+  // Edificio (paredes azules)
+  const edificio = new THREE.Mesh(
+    new THREE.BoxGeometry(10, 6, 6),
+    new THREE.MeshPhongMaterial({ color: 0x3366cc }) // azul
+  );
+  edificio.position.y = 3;
+  grupo.add(edificio);
+
+  // Techo rojo
+  const techo = new THREE.Mesh(
+    new THREE.ConeGeometry(7, 3, 4),
+    new THREE.MeshPhongMaterial({ color: 0xcc3333 }) // rojo
+  );
+  techo.position.y = 7.5;
+  techo.rotation.y = Math.PI / 4;
+  grupo.add(techo);
+
+  // Puerta amarilla
+  const puerta = new THREE.Mesh(
+    new THREE.BoxGeometry(1.5, 2.5, 0.2),
+    new THREE.MeshPhongMaterial({ color: 0xffcc00 }) // amarillo
+  );
+  puerta.position.set(0, 1.25, 3.1);
+  grupo.add(puerta);
+
+  // Ventanas blancas
+  function crearVentana(x, y, z) {
+    const ventana = new THREE.Mesh(
+      new THREE.PlaneGeometry(1.2, 1.2),
+      new THREE.MeshBasicMaterial({ color: 0xffffff })
+    );
+    ventana.position.set(x, y, z);
+    grupo.add(ventana);
+  }
+
+  crearVentana(-3, 4, 3.05);
+  crearVentana(3, 4, 3.05);
+  crearVentana(-3, 4, -3.05);
+  crearVentana(3, 4, -3.05);
+
+  // Posicionar y escalar el grupo completo
+  grupo.position.set(posicion.x, 0, posicion.z);
+  grupo.scale.set(3, 3, 3); // ESCALA UNIFORME
+  scene.add(grupo);
+}
+
 
 
 // ----- CREACIÓN DE ELEMENTOS -----
@@ -198,6 +247,8 @@ function crearBloqueo(scene, position, radio = 5) {
   bloqueoMeshes.push(bloqueo);
 }
 
+let mostrarNombresCalles = false;
+
 function dibujarCallesDesdeJSON() {
   // Eliminar las calles anteriores
   callesMeshes.forEach(mesh => scene.remove(mesh));
@@ -259,6 +310,50 @@ function dibujarCallesDesdeJSON() {
     bordeIzquierdo.position.set(posX - offsetX, 0.011, posZ - offsetZ);
     scene.add(bordeIzquierdo);
     callesMeshes.push(bordeIzquierdo);
+
+if (mostrarNombresCalles) {
+  const canvas = document.createElement("canvas");
+  canvas.width = 512;
+  canvas.height = 128;
+  const context = canvas.getContext("2d");
+
+  // Fondo transparente (NO pintamos fondo)
+context.clearRect(0, 0, canvas.width, canvas.height);
+
+context.font = "bold 100px 'Times New Roman', serif";  // bold para más gordito
+context.textAlign = "center";
+context.textBaseline = "middle";
+
+// Primero dibujas el contorno (línea negra)
+context.lineWidth = 8;                 // Grosor del contorno, ajusta al gusto
+context.strokeStyle = "black";         // Color del contorno
+context.strokeText(calleKey, canvas.width / 2, canvas.height / 2);
+
+// Luego rellenas el texto en blanco
+context.fillStyle = "white";
+context.fillText(calleKey, canvas.width / 2, canvas.height / 2);
+
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.needsUpdate = true;
+  texture.minFilter = THREE.LinearFilter;
+
+  const materialText = new THREE.SpriteMaterial({ map: texture, transparent: true });
+  const sprite = new THREE.Sprite(materialText);
+  sprite.scale.set(20, 5, 1); // Más grande y elegante
+
+  // Posición: un poco arriba de la calle
+  sprite.position.set(posX, 2.5, posZ);
+
+  // Rotar si quieres que el texto siga la dirección de la calle:
+  sprite.rotation.z = -angulo;
+
+  scene.add(sprite);
+  callesMeshes.push(sprite);
+}
+
+
+
   });
 }
 
@@ -518,6 +613,8 @@ ground.userData.type = "ground";
 
   crearSemaforo({ x: -92, z: 0 }, "green");
   crearSemaforo({ x: -5, z: -82 }, "red");
+  crearEscuela({ x: -40, z: -40 });
+
 
   const numCars = 5; // Lo ajusta backend después
   const trafico = "moderado";
@@ -527,6 +624,17 @@ ground.userData.type = "ground";
 }
 
 window.addEventListener('DOMContentLoaded', init);
+
+window.addEventListener('DOMContentLoaded', () => {
+  const btnToggleNombres = document.getElementById("btnToggleNombres");
+
+  btnToggleNombres.addEventListener("click", () => {
+    mostrarNombresCalles = !mostrarNombresCalles;
+    btnToggleNombres.textContent = mostrarNombresCalles ? "Ocultar nombres de calles" : "Mostrar nombres de calles";
+    dibujarCallesDesdeJSON();
+  });
+});
+
 
 // ----- Eventos -----
 document.getElementById("play-button").addEventListener("click", () => {
