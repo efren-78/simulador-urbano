@@ -672,11 +672,14 @@ socket.onmessage = ({ data }) => {
 
 // Ajustar cantidad de autos
 function ajustarCantidadAutos(cantidad) {
+    console.log("⏫ Ajustando cantidad de autos a:", cantidad);
+
   cars.forEach(car => scene.remove(car));
   cars.length = 0;
   carRoutes.length = 0;
   carSpeeds.length = 0;
   crearAutos(cantidad, calcularVelocidadBase("moderado"));
+  
 }
 
 // Ajustar tráfico
