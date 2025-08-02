@@ -817,4 +817,43 @@ input[type='checkbox']:checked + label .lil_arrow {
   cursor: pointer;
 }
 
+/* === Botones de movimiento de cámara === */
+.camera-move-controls {
+  position: absolute;
+  bottom: 20px; 
+  right: 600px;
+  display: flex;
+  flex-direction: row; 
+  gap: 8px;
+  z-index: 200;
+}
 
+/* Mantener estilos existentes para los botones */
+.camera-move-controls button {
+  background: var(--accent-blue-intense);
+  color: var(--txt-light);
+  border: none;
+  border-radius: 50%;
+  width: 45px;
+  height: 45px;
+  font-size: 1.8em;
+  font-weight: bold;
+  box-shadow: 0 3px 12px #0005;
+  cursor: pointer;
+  transition: background 0.18s, transform 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.camera-move-controls button:hover {
+  background: var(--accent-blue-light);
+  transform: scale(1.12);
+}
+
+.camera-move-controls button img {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  pointer-events: none;
+}
