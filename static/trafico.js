@@ -630,7 +630,8 @@ window.addEventListener('DOMContentLoaded', () => {
 
   btnToggleNombres.addEventListener("click", () => {
     mostrarNombresCalles = !mostrarNombresCalles;
-    btnToggleNombres.textContent = mostrarNombresCalles ? "Ocultar nombres de calles" : "Mostrar nombres de calles";
+    const spanTexto = document.getElementById("btnTexto");
+    spanTexto.textContent = mostrarNombresCalles ? "Ocultar nombre de calles" : "Mostrar nombre de calles";
     dibujarCallesDesdeJSON();
   });
 });
@@ -806,3 +807,18 @@ function setCameraZoom(newZoom) {
 }
 document.getElementById("zoom-in").addEventListener("click", () => setCameraZoom(zoomLevel - 15));
 document.getElementById("zoom-out").addEventListener("click", () => setCameraZoom(zoomLevel + 20));
+
+// ----- Movimiento lateral de la cámara -----
+let camX = 0;
+let camZ = 100; // posición inicial 
+function moverCamara(dx, dz) {
+  camX += dx;
+  camZ += dz;
+  camera.position.set(camX, zoomLevel, camZ);
+  camera.lookAt(camX, 0, camZ - 100); // ajusta para que siga viendo al frente
+}
+
+document.getElementById("move-left").addEventListener("click", () => moverCamara(-10, 0));
+document.getElementById("move-right").addEventListener("click", () => moverCamara(10, 0));
+document.getElementById("move-up").addEventListener("click", () => moverCamara(0, -10));
+document.getElementById("move-down").addEventListener("click", () => moverCamara(0, 10));

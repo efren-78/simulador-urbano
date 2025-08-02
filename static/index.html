@@ -42,7 +42,7 @@
           <button id="add-bloqueo"> <img src="imagenes/agregar.png" alt="+" /><span>Agregar bloqueo</span></button>
           <button id="remove-bloqueo"> <img src="imagenes/eliminar.png" alt="-" /><span>Eliminar bloqueo</span></button>
           <button id="clear-bloqueos"> <img src="imagenes/quitar.png" alt="*" /><span>Quitar todos</span></button>
-          <button id="btnToggleNombres"> <img src="imagenes/rutass.png" alt="*" /><span> Nombre de calles</span></button>
+          <button id="btnToggleNombres"> <img src="imagenes/location.png" alt="Ubicacion" /><span id="btnTexto"> Nombre de calles</span></button>
 
         </div>
 
@@ -82,6 +82,15 @@
         <button id="zoom-in" title="Acercar"><img src="imagenes/zoom.png" alt="Acercar" /></button>
         <button id="zoom-out" title="Alejar"><img src="imagenes/minus.png" alt="Alejar" /></button>
       </div>
+
+      <!-- Movimiento de cámara -->
+      <div class="camera-move-controls">
+        <button id="move-left" title="Izquierda"><img src="imagenes/left.png" alt="*" /></button>
+        <button id="move-up" title="Arriba"><img src="imagenes/up.png" alt="+" /></button>
+        <button id="move-down" title="Abajo"><img src="imagenes/down.png" alt="/" /></button>
+        <button id="move-right" title="Derecha"><img src="imagenes/right.png" alt="-" /></button>
+      </div>
+
 
       <!-- Lienzo y semáforo -->
       <canvas id="mapaCanvas" width="800" height="600"></canvas>
