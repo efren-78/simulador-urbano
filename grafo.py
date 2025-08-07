@@ -42,3 +42,34 @@ class Grafo:
     def mostrar_adyacencias(self):
         for nodo, vecinos in self.adyacencias.items():
             print(f"{nodo} -> {list(vecinos)}")
+
+    def calles_formato_json(self):
+        resultado = []
+        for nombre, puntos in self.calles.items():
+            coords = [[p["x"], p["y"]] for p in puntos]
+            resultado.append({
+                "nombre": nombre,
+                "coords": coords
+            })
+        return resultado
+
+def ruta_a_coordenadas(grafo: Grafo, ruta: list):
+    coordenadas = []
+
+    for nombre_calle in ruta:
+        segmento = grafo.obtener_coordenadas(nombre_calle)
+        if not segmento or len(segmento) != 2:
+            continue
+
+        p1 = tuple(segmento[0].values())
+        p2 = tuple(segmento[1].values())
+
+        if not coordenadas:
+            coordenadas.append(p1)
+
+        if coordenadas[-1] != p1:
+            coordenadas.append(p1)
+        
+        coordenadas.append(p2)
+
+    return coordenadas

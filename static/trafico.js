@@ -16,6 +16,8 @@ let modoEliminarBloqueo = false;
 const bloqueos = [];
 const bloqueoMeshes = [];
 
+let grafoCalles = new Map();
+
 // ----- CARGA DE RECURSOS -----
 //Carpeta /json
 async function cargarCalles() {
@@ -43,6 +45,32 @@ async function cargarRutasAutos() {
     console.error('Error cargando rutas de autos:', error);
     return false;
   }
+}
+
+function puntoClave(p) {
+  return `${p.x},${p.y}`;
+}
+
+function construirGrafo() {
+  Object.keys(calles).forEach(calleKey => {
+    const puntos = calles[calleKey];
+    for (let i = 0; i < puntos.length - 1; i++) {
+      const p1 = puntos[i];
+      const p2 = puntos[i + 1];
+
+      // Si el nodo (intersección) no existe, lo creamos
+      if (!grafoCalles.has(p1)) {
+        grafoCalles.set(p1, []);
+      }
+      if (!grafoCalles.has(p2)) {
+        grafoCalles.set(p2, []);
+      }
+
+      // Agregar la conexión entre las intersecciones
+      grafoCalles.get(p1).push(p2);
+      grafoCalles.get(p2).push(p1); // El grafo es bidireccional
+    }
+  });
 }
 
 
@@ -330,118 +358,6 @@ function dibujarCalles() {
 }
 
 
-/*
-function dibujarCallesDesdeJSON() {
-  // Eliminar las calles anteriores
-  callesMeshes.forEach(mesh => scene.remove(mesh));
-  callesMeshes.length = 0;
-
-  Object.keys(calles).forEach(calleKey => {
-    const puntos = calles[calleKey];
-    if (puntos.length < 2) return;
-
-    const p1 = puntos[0];
-    const p2 = puntos[1];
-
-    const dx = p2.x - p1.x;
-    const dy = p2.y - p1.y;
-    const longitud = Math.sqrt(dx * dx + dy * dy);
-    const ancho = 1;
-
-    const angulo = Math.atan2(dy, dx);
-    const posX = (p1.x + p2.x) / 2;
-    const posZ = (p1.y + p2.y) / 2;
-
-    // Calle amarilla
-    const geometryAmarilla = new THREE.PlaneGeometry(longitud, ancho);
-    const materialAmarilla = new THREE.MeshBasicMaterial({
-      color: 0xffff00,
-      side: THREE.DoubleSide
-    });
-
-    const meshAmarillo = new THREE.Mesh(geometryAmarilla, materialAmarilla);
-    meshAmarillo.rotation.x = -Math.PI / 2;
-    meshAmarillo.rotation.z = -angulo;
-    meshAmarillo.position.set(posX, 0.01, posZ);
-    scene.add(meshAmarillo);
-    callesMeshes.push(meshAmarillo);
-
-    // Borde lateral negro (ambos lados)
-    const offset = 1.9; // Distancia lateral del borde desde el centro
-    const offsetX = -Math.sin(angulo) * offset;
-    const offsetZ = Math.cos(angulo) * offset;
-
-    const geometryBorde = new THREE.PlaneGeometry(longitud, 3); // Borde delgado
-    const materialBorde = new THREE.MeshBasicMaterial({
-      color: 0x000000,
-      side: THREE.DoubleSide
-    });
-
-    // Borde derecho
-    const bordeDerecho = new THREE.Mesh(geometryBorde, materialBorde);
-    bordeDerecho.rotation.x = -Math.PI / 2;
-    bordeDerecho.rotation.z = -angulo;
-    bordeDerecho.position.set(posX + offsetX, 0.011, posZ + offsetZ);
-    scene.add(bordeDerecho);
-    callesMeshes.push(bordeDerecho);
-
-    // Borde izquierdo
-    const bordeIzquierdo = new THREE.Mesh(geometryBorde, materialBorde);
-    bordeIzquierdo.rotation.x = -Math.PI / 2;
-    bordeIzquierdo.rotation.z = -angulo;
-    bordeIzquierdo.position.set(posX - offsetX, 0.011, posZ - offsetZ);
-    scene.add(bordeIzquierdo);
-    callesMeshes.push(bordeIzquierdo);
-
-if (mostrarNombresCalles) {
-  const canvas = document.createElement("canvas");
-  canvas.width = 512;
-  canvas.height = 128;
-  const context = canvas.getContext("2d");
-
-  // Fondo transparente (NO pintamos fondo)
-context.clearRect(0, 0, canvas.width, canvas.height);
-
-context.font = "bold 100px 'Times New Roman', serif";  // bold para más gordito
-context.textAlign = "center";
-context.textBaseline = "middle";
-
-// Primero dibujas el contorno (línea negra)
-context.lineWidth = 8;                 // Grosor del contorno, ajusta al gusto
-context.strokeStyle = "black";         // Color del contorno
-context.strokeText(calleKey, canvas.width / 2, canvas.height / 2);
-
-// Luego rellenas el texto en blanco
-context.fillStyle = "white";
-context.fillText(calleKey, canvas.width / 2, canvas.height / 2);
-
-
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.needsUpdate = true;
-  texture.minFilter = THREE.LinearFilter;
-
-  const materialText = new THREE.SpriteMaterial({ map: texture, transparent: true });
-  const sprite = new THREE.Sprite(materialText);
-  sprite.scale.set(20, 5, 1); // Más grande y elegante
-
-  // Posición: un poco arriba de la calle
-  sprite.position.set(posX, 2.5, posZ);
-
-  // Rotar si quieres que el texto siga la dirección de la calle:
-  sprite.rotation.z = -angulo;
-
-  scene.add(sprite);
-  callesMeshes.push(sprite);
-}
-
-
-
-  });
-}
-*/
-
-
-
 // ----- Animacion -----
 function animate() {
   if (!running) return;
@@ -481,8 +397,6 @@ function actualizarSemaforos() {
   });
 }
 
-
-
 function moverAutos(delta) {
   cars.forEach((car, i) => {
     const puntos = car.userData.ruta;
@@ -521,21 +435,38 @@ function moverAutos(delta) {
       car.userData.waitStart = null;
     }
 
+    // Verificar colisiones entre autos
+    verificarColisiones(car);
 
     if (!detener) {
       let p1 = puntos[index];
       let p2 = puntos[index + 1];
       if (!p2) {
-        car.userData.index = 0;
-        car.userData.t = 0;
-        p1 = puntos[0];
-        p2 = puntos[1];
+        // Ruta terminada, calcular nueva ruta aleatoria
+        const posActual = { x: car.position.x, y: car.position.z };
+        const siguienteInterseccion = obtenerInterseccionAleatoria(car.position);
+        const nuevaRuta = calcularRutaDesde(posActual, siguienteInterseccion); // Usa el grafo cargado en JS
+
+        if (nuevaRuta && nuevaRuta.length >= 2) {
+          car.userData.ruta = nuevaRuta;
+          car.userData.index = 0;
+          car.userData.t = 0;
+        } else {
+          // No se pudo encontrar nueva ruta, detener el auto
+          return;
+        }
       }
+
+      // Movimiento a lo largo de la ruta
       car.userData.t += speed * delta * 60;
       if (car.userData.t >= 1) {
         car.userData.index++;
         car.userData.t = 0;
       }
+
+      // Calcular posición interpolada
+      p1 = puntos[car.userData.index];
+      p2 = puntos[car.userData.index + 1];
       const x = THREE.MathUtils.lerp(p1.x, p2.x, car.userData.t);
       const z = THREE.MathUtils.lerp(p1.y, p2.y, car.userData.t);
       car.position.set(x, 0.5, z);
@@ -543,8 +474,28 @@ function moverAutos(delta) {
       car.rotation.y = -angle;
     }
   });
-
 }
+
+// Función para obtener una intersección aleatoria adyacente
+function obtenerInterseccionAleatoria(posicion) {
+  const interseccionesCercanas = [];
+  
+  grafoCalles.forEach((conexiones, interseccion) => {
+    // Verificar si la intersección está cerca de la posición del auto
+    const dist = new THREE.Vector3(posicion.x, 0, posicion.z).distanceTo(new THREE.Vector3(interseccion.x, 0, interseccion.y));
+    if (dist < 30) {  // Distancia para considerar intersección cercana (ajusta según lo que necesites)
+      interseccionesCercanas.push(interseccion);
+    }
+  });
+
+  // Elegir una intersección aleatoria cercana
+  if (interseccionesCercanas.length > 0) {
+    return interseccionesCercanas[Math.floor(Math.random() * interseccionesCercanas.length)];
+  }
+  
+  return null; // No hay intersecciones cercanas
+}
+
 
 function calcularVelocidadBase(nivel) {
   switch (nivel.toLowerCase()) {
@@ -554,6 +505,18 @@ function calcularVelocidadBase(nivel) {
     default: return 0.001;
   }
 }
+
+function verificarColisiones(car) {
+  cars.forEach((otroAuto) => {
+    if (car !== otroAuto) {
+      const distancia = car.position.distanceTo(otroAuto.position);
+      if (distancia < 2) { // Si están demasiado cerca
+        car.userData.waitStart = performance.now(); // Detener el auto temporalmente
+      }
+    }
+  });
+}
+
 
 // ----- Operaciones basicas -----
 function playSim() {
@@ -638,6 +601,8 @@ async function init() {
   await cargarCalles();
   await cargarRutasAutos();
 
+  // Construir el grafo de calles
+  construirGrafo();
 
   scene = new THREE.Scene();
 
@@ -698,7 +663,7 @@ ground.userData.type = "ground";
   crearEscuela({ x: -40, z: -40 });
 
 
-  const numCars = 5; // Lo ajusta backend después
+  const numCars = 10; // Lo ajusta backend después
   const trafico = "moderado";
   crearAutos(numCars, calcularVelocidadBase(trafico));
 

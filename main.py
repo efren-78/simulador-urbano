@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse
@@ -7,13 +7,14 @@ import uvicorn, threading, asyncio, json, logging
 
 from LLM_model import generar_respuesta #Modelo openai
 from config import Simulacion #Operaciones basicas
-from grafo import Grafo
+#from grafo import Grafo, ruta_a_coordenadas
 
 app = FastAPI() #Api
+router = APIRouter()
 sim = Simulacion() #Operaciones
 connected_websockets = [] 
-grafo = Grafo()
-grafo.cargar_calles("static/json/rutas.json")
+#grafo = Grafo()
+#grafo.cargar_calles("static/json/rutas.json")
 
 estado_semaforo = "rojo"  # Estado inicial
 
@@ -224,15 +225,44 @@ async def notificar_todos(data: dict):
 # Sirve archivos estáticos HTML + JS debe ir en /static)
 app.mount("/", StaticFiles(directory="static", html=True), name="static")
 
+app.include_router(router)
 
+"""
 #----- Operaciones de grafo -----
-@app.get("/calles")
+@router.get("/calles")
 def obtener_calles():
-    calles = []
-    for nombre in grafo.obtener_nombres():
-        coordenadas = grafo.obtener_coordenadas(nombre)
-        calles.append({
-            "nombre": nombre,
-            "coords": coordenadas
-        })
-    return JSONResponse(content=calles)
+    return grafo.calles_formato_json()
+
+
+with open("static/json/rutas_autos.json", "r") as f:
+    rutas_autos = json.load(f)
+
+
+@router.get("/ruta/{nombre_ruta}")
+def obtener_ruta(nombre_ruta: str):
+    if nombre_ruta not in rutas_autos:
+        return JSONResponse(status_code=404, content={"error": "Ruta no encontrada"})
+
+    calles = rutas_autos[nombre_ruta]
+    coordenadas = []
+
+    for i, nombre_calle in enumerate(calles):
+        puntos = grafo.obtener_coordenadas(nombre_calle)
+        if not puntos:
+            continue
+        # Convertimos a formato [x, y]
+        segmento = [[p["x"], p["y"]] for p in puntos]
+
+        # Evita duplicar el punto si se conecta con la calle anterior
+        if i > 0 and coordenadas and coordenadas[-1] == segmento[0]:
+            segmento = segmento[1:]
+
+        coordenadas.extend(segmento)
+
+    return {"nombre": nombre_ruta, "coordenadas": coordenadas}
+
+@router.get("/rutas_disponibles")
+def listar_rutas():
+    return list(rutas_autos.keys())
+
+"""
