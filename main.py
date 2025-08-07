@@ -1,15 +1,19 @@
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 import uvicorn, threading, asyncio, json, logging
 
 from LLM_model import generar_respuesta #Modelo openai
 from config import Simulacion #Operaciones basicas
+from grafo import Grafo
 
 app = FastAPI() #Api
 sim = Simulacion() #Operaciones
 connected_websockets = [] 
+grafo = Grafo()
+grafo.cargar_calles("static/json/rutas.json")
 
 estado_semaforo = "rojo"  # Estado inicial
 
@@ -219,3 +223,16 @@ async def notificar_todos(data: dict):
 
 # Sirve archivos estáticos HTML + JS debe ir en /static)
 app.mount("/", StaticFiles(directory="static", html=True), name="static")
+
+
+#----- Operaciones de grafo -----
+@app.get("/calles")
+def obtener_calles():
+    calles = []
+    for nombre in grafo.obtener_nombres():
+        coordenadas = grafo.obtener_coordenadas(nombre)
+        calles.append({
+            "nombre": nombre,
+            "coords": coordenadas
+        })
+    return JSONResponse(content=calles)

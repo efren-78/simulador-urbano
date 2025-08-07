@@ -45,6 +45,8 @@ async function cargarRutasAutos() {
   }
 }
 
+
+// ----- CREACIÓN DE ELEMENTOS -----
 function crearEscuela(posicion = { x: 0, z: 0 }, escala = 1) {
   const grupo = new THREE.Group();
 
@@ -94,22 +96,7 @@ function crearEscuela(posicion = { x: 0, z: 0 }, escala = 1) {
   scene.add(grupo);
 }
 
-
-
-// ----- CREACIÓN DE ELEMENTOS -----
-//Esta funcion ya no se usa a menos que se quiera una calle fija
-/*function crearCalleLarga(width, length, rotationY = 0, position = { x: 0, z: 0 }) {
-  const geometry = new THREE.PlaneGeometry(width, length);
-  const material = new THREE.MeshPhongMaterial({ color: 0x2c2c2c });
-  const calle = new THREE.Mesh(geometry, material);
-  calle.rotation.x = -Math.PI / 2;
-  calle.rotation.z = rotationY;
-  calle.position.set(position.x, 0, position.z);
-  scene.add(calle);
-}*/
-
 //Semaforo simple
-//Corregir posicion, falta modelado 3d
 function crearSemaforo(position, initialState = "red") {
   const colores = {
     red: 0xff0000,
@@ -158,8 +145,7 @@ function crearSemaforo(position, initialState = "red") {
   semaforos.push(grupo);
 }
 
-
-
+//Carro simple
 function createCar(color) {
   const carGroup = new THREE.Group();
 
@@ -249,6 +235,102 @@ function crearBloqueo(scene, position, radio = 5) {
 
 let mostrarNombresCalles = false;
 
+function dibujarCalles() {
+  // Eliminar las calles anteriores
+  callesMeshes.forEach(mesh => scene.remove(mesh));
+  callesMeshes.length = 0;
+
+  Object.keys(calles).forEach(calleKey => {
+    const puntos = calles[calleKey];
+    if (puntos.length < 2) return;
+
+    const p1 = puntos[0];
+    const p2 = puntos[1];
+
+    const dx = p2.x - p1.x;
+    const dy = p2.y - p1.y;
+    const longitud = Math.sqrt(dx * dx + dy * dy);
+    const ancho = 1;
+
+    const angulo = Math.atan2(dy, dx);
+    const posX = (p1.x + p2.x) / 2;
+    const posZ = (p1.y + p2.y) / 2;
+
+    // Calle amarilla
+    const geometryAmarilla = new THREE.PlaneGeometry(longitud, ancho);
+    const materialAmarilla = new THREE.MeshBasicMaterial({
+      color: 0xffff00,
+      side: THREE.DoubleSide
+    });
+
+    const meshAmarillo = new THREE.Mesh(geometryAmarilla, materialAmarilla);
+    meshAmarillo.rotation.x = -Math.PI / 2;
+    meshAmarillo.rotation.z = -angulo;
+    meshAmarillo.position.set(posX, 0.01, posZ);
+    scene.add(meshAmarillo);
+    callesMeshes.push(meshAmarillo);
+
+    // Borde lateral negro (ambos lados)
+    const offset = 1.9;
+    const offsetX = -Math.sin(angulo) * offset;
+    const offsetZ = Math.cos(angulo) * offset;
+
+    const geometryBorde = new THREE.PlaneGeometry(longitud, 3);
+    const materialBorde = new THREE.MeshBasicMaterial({
+      color: 0x000000,
+      side: THREE.DoubleSide
+    });
+
+    const bordeDerecho = new THREE.Mesh(geometryBorde, materialBorde);
+    bordeDerecho.rotation.x = -Math.PI / 2;
+    bordeDerecho.rotation.z = -angulo;
+    bordeDerecho.position.set(posX + offsetX, 0.011, posZ + offsetZ);
+    scene.add(bordeDerecho);
+    callesMeshes.push(bordeDerecho);
+
+    const bordeIzquierdo = new THREE.Mesh(geometryBorde, materialBorde);
+    bordeIzquierdo.rotation.x = -Math.PI / 2;
+    bordeIzquierdo.rotation.z = -angulo;
+    bordeIzquierdo.position.set(posX - offsetX, 0.011, posZ - offsetZ);
+    scene.add(bordeIzquierdo);
+    callesMeshes.push(bordeIzquierdo);
+
+    if (mostrarNombresCalles) {
+      const canvas = document.createElement("canvas");
+      canvas.width = 512;
+      canvas.height = 128;
+      const context = canvas.getContext("2d");
+
+      context.clearRect(0, 0, canvas.width, canvas.height);
+      context.font = "bold 100px 'Times New Roman', serif";
+      context.textAlign = "center";
+      context.textBaseline = "middle";
+
+      context.lineWidth = 8;
+      context.strokeStyle = "black";
+      context.strokeText(calleKey, canvas.width / 2, canvas.height / 2);
+
+      context.fillStyle = "white";
+      context.fillText(calleKey, canvas.width / 2, canvas.height / 2);
+
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.needsUpdate = true;
+      texture.minFilter = THREE.LinearFilter;
+
+      const materialText = new THREE.SpriteMaterial({ map: texture, transparent: true });
+      const sprite = new THREE.Sprite(materialText);
+      sprite.scale.set(20, 5, 1);
+      sprite.position.set(posX, 2.5, posZ);
+      sprite.rotation.z = -angulo;
+
+      scene.add(sprite);
+      callesMeshes.push(sprite);
+    }
+  });
+}
+
+
+/*
 function dibujarCallesDesdeJSON() {
   // Eliminar las calles anteriores
   callesMeshes.forEach(mesh => scene.remove(mesh));
@@ -356,7 +438,7 @@ context.fillText(calleKey, canvas.width / 2, canvas.height / 2);
 
   });
 }
-
+*/
 
 
 
@@ -564,12 +646,12 @@ async function init() {
   loader.load(
     'imagenes/cielo4.png',
     function (texture) {
-      console.log('✅ Imagen cargada correctamente');
+      console.log('Imagen cargada correctamente');
       scene.background = texture;
     },
     undefined,
     function (err) {
-      console.error('❌ Error cargando la imagen', err);
+      console.error(' Error cargando la imagen', err);
     }
   );
 
@@ -608,8 +690,8 @@ ground.userData.type = "ground";
   light.position.set(20, 40, 20);
   scene.add(light);
 
-  dibujarCallesDesdeJSON();
-  
+  //dibujarCallesDesdeJSON();
+  dibujarCalles();
 
   crearSemaforo({ x: -92, z: 0 }, "green");
   crearSemaforo({ x: -5, z: -82 }, "red");
