@@ -509,7 +509,6 @@ function verificarColisiones(car) {
   });
 }
 
-
 //Obstruccion en calles
 function crearBloqueo(scene, position, radio = 5) {
   const geometry = new THREE.CircleGeometry(radio, 32);
@@ -522,6 +521,22 @@ function crearBloqueo(scene, position, radio = 5) {
   bloqueos.push({ position, radio });
   bloqueoMeshes.push(bloqueo);
 }
+
+function reportarBloqueoBackend(position, radio = 5) {
+  fetch("http://localhost:8000/bloqueo", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ x: position.x, z: position.z, radio: radio })
+  }).then(res => {
+    if (!res.ok) throw new Error("Error al reportar el bloqueo al backend");
+  }).catch(err => console.error("Error de red al reportar bloqueo:", err));
+}
+
+function agregarBloqueo(scene, position, radio = 5) {
+  crearBloqueo(scene, position, radio);
+  reportarBloqueoBackend(position, radio);
+}
+
 
 // ----- FUNCIONALIDADES DEL GRAFO -----
 function calcularRutaDesde(posActual, destino) {
@@ -693,17 +708,24 @@ async function enviarPrompt() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ prompt: inputValue, max_tokens: 150 })
     });
+
     const data = await response.json();
     console.log("Respuesta backend NLP:", data);
 
     const accion = data.status?.toLowerCase() || "";
+
     if (accion.includes("start")) playSim();
     else if (accion.includes("stop")) stopSim();
     else if (accion.includes("reload")) reloadSim();
+    else if (accion.includes("bloqueo") && data.x !== undefined && data.z !== undefined) {
+      const pos = { x: data.x, z: data.z };
+      agregarBloqueo(scene, pos, data.radio || 5);  // usa radio recibido o por defecto 5
+    }
   } catch (error) {
     console.error("Error al enviar prompt:", error);
   }
 }
+
 
 // -----  INICIALIZACION -----
 async function init() {
@@ -933,6 +955,11 @@ socket.onmessage = ({ data }) => {
   if (msg.accion === "start") playSim();
   else if (msg.accion === "stop") stopSim();
   else if (msg.accion === "reload") reloadSim();
+
+  if (msg.accion === "bloqueo" && msg.x !== undefined && msg.z !== undefined) {
+    const posicion = { x: msg.x, z: msg.z };
+    crearBloqueo(scene, posicion, msg.radio || 5);
+  }
 };
 
 // Ajustar cantidad de autos

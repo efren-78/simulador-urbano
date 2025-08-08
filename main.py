@@ -1,13 +1,14 @@
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import JSONResponse
+from fastapi.responses import Response
 from pydantic import BaseModel
 import uvicorn, threading, asyncio, json, logging
 
 from LLM_model import generar_respuesta #Modelo openai
 from config import Simulacion #Operaciones basicas
 #from grafo import Grafo, ruta_a_coordenadas
+from prometheus_client import Counter, Gauge, generate_latest, CONTENT_TYPE_LATEST
 
 app = FastAPI() #Api
 router = APIRouter()
@@ -91,6 +92,25 @@ async def cambiar_semaforo(estado: str):
 def obtener_estado():
     return {"estado": estado_semaforo}
 
+class BloqueoRequest(BaseModel):
+    x: float
+    z: float
+    radio: float = 5.0
+
+
+@app.post("/bloqueo")
+async def crear_bloqueo(bloqueo: BloqueoRequest):
+    sim.agregar_bloqueo(bloqueo.x, bloqueo.z, bloqueo.radio)
+    data = {
+        "accion": "bloqueo",
+        "x": bloqueo.x,
+        "z": bloqueo.z,
+        "radio": bloqueo.radio
+    }
+    await notificar_todos(data)
+    return {"status": "Bloqueo creado", **data}
+
+
 #------NLP------
 
 #Modelo para recibir un prompt
@@ -110,6 +130,7 @@ async def responder(req: PromptRequest):
     numCars = params.get("numCars", 10)
     trafico = params.get("trafico", "moderado")
     semaforo = params.get("semaforo", None)
+    bloqueo = params.get("bloqueo", None)
 
     sim.set_config(numCars, trafico)
 
@@ -140,12 +161,28 @@ async def responder(req: PromptRequest):
         })
         logging.info(f"Semáforo cambiado a: {estado_semaforo}")
 
-    return {
-        "status": f"Acción '{accion}' ejecutada",
-        "numCars": sim.numCars,
-        "trafico": sim.trafico,
-        "semaforo": estado_semaforo
-    }
+    if bloqueo:
+        await notificar_todos({
+            "accion": "bloqueo",
+            "x": bloqueo["x"],
+            "z": bloqueo["z"],
+            "radio": bloqueo.get("radio", 5.0)
+        })
+        logging.info(f"Bloqueo colocado en x={bloqueo['x']}, z={bloqueo['z']}")
+        
+    response = {
+    "status": accion,
+    "numCars": sim.numCars,
+    "trafico": sim.trafico,
+    "semaforo": estado_semaforo
+}
+
+    if bloqueo:
+        response["x"] = bloqueo["x"]
+        response["z"] = bloqueo["z"]
+        response["radio"] = bloqueo.get("radio", 5.0)
+
+    return response
 
 
 
@@ -157,6 +194,13 @@ async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
     connected_websockets.append(websocket)
     logging.info("Cliente WebSocket conectado")
+
+    # Enviar bloqueos actuales al cliente nuevo
+    for bloqueo in sim.bloqueos:
+        await websocket.send_text(json.dumps({
+            "accion": "bloqueo",
+            **bloqueo
+        }))
 
     try:
         while True:
@@ -226,43 +270,3 @@ async def notificar_todos(data: dict):
 app.mount("/", StaticFiles(directory="static", html=True), name="static")
 
 app.include_router(router)
-
-"""
-#----- Operaciones de grafo -----
-@router.get("/calles")
-def obtener_calles():
-    return grafo.calles_formato_json()
-
-
-with open("static/json/rutas_autos.json", "r") as f:
-    rutas_autos = json.load(f)
-
-
-@router.get("/ruta/{nombre_ruta}")
-def obtener_ruta(nombre_ruta: str):
-    if nombre_ruta not in rutas_autos:
-        return JSONResponse(status_code=404, content={"error": "Ruta no encontrada"})
-
-    calles = rutas_autos[nombre_ruta]
-    coordenadas = []
-
-    for i, nombre_calle in enumerate(calles):
-        puntos = grafo.obtener_coordenadas(nombre_calle)
-        if not puntos:
-            continue
-        # Convertimos a formato [x, y]
-        segmento = [[p["x"], p["y"]] for p in puntos]
-
-        # Evita duplicar el punto si se conecta con la calle anterior
-        if i > 0 and coordenadas and coordenadas[-1] == segmento[0]:
-            segmento = segmento[1:]
-
-        coordenadas.extend(segmento)
-
-    return {"nombre": nombre_ruta, "coordenadas": coordenadas}
-
-@router.get("/rutas_disponibles")
-def listar_rutas():
-    return list(rutas_autos.keys())
-
-"""

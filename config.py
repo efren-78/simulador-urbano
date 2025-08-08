@@ -8,6 +8,7 @@ class Simulacion:
         self.trafico = "moderado"
         self.running = False
         self.lock = threading.Lock()
+        self.bloqueos = [] 
     
     #Establece los parámetros de configuración de la simulación
     def set_config(self, numCars, trafico):
@@ -47,3 +48,8 @@ class Simulacion:
         print("Simulación recargada")
         self.detener_simulacion()
         self.iniciar_simulacion(pasos, delay)
+
+    def agregar_bloqueo(self, x, z, radio=5):
+        bloqueo = {"x": x, "z": z, "radio": radio}
+        if bloqueo not in self.bloqueos:
+            self.bloqueos.append(bloqueo)

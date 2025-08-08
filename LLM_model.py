@@ -39,10 +39,13 @@ def generar_respuesta(prompt: str, max_tokens: int = 150) -> dict:
                         "y devolver SIEMPRE un JSON puro y válido, sin ningún bloque ```json "
                         "ni texto adicional. El JSON debe incluir: "
                         "\"accion\" (uno de: \"start\", \"stop\", \"reload\", \"none\"), "
-                        "\"numCars\" (entero), \"trafico\" (\"alto\", \"moderado\" o \"bajo\"), "
-                        "y opcionalmente \"semaforo\" (\"verde\", \"rojo\", \"amarillo\"). "
+                        "\"numCars\" (entero), "
+                        "\"trafico\" (\"alto\", \"moderado\", \"bajo\"), "
+                        "\"semaforo\" (\"verde\", \"amarillo\", \"rojo\" o null), "
+                        "\"bloqueo\" puede ser null o un objeto con claves \"x\" (float), \"z\" (float) y \"radio\" (float, opcional). "
                         "Si el usuario no especifica valores, usa: accion=\"none\", numCars=10, trafico=\"moderado\". "
                         "No devuelvas explicaciones, solo el JSON en una línea."
+
                     )
                 },
                 {"role": "user", "content": prompt}
@@ -87,11 +90,25 @@ def generar_respuesta(prompt: str, max_tokens: int = 150) -> dict:
             if semaforo not in ["verde", "amarillo", "rojo"]:
                 semaforo = None
 
+        bloqueo = params.get("bloqueo", None)
+        if isinstance(bloqueo, dict):
+            try:
+                x = float(bloqueo["x"])
+                z = float(bloqueo["z"])
+                radio = float(bloqueo.get("radio", 5.0))
+                bloqueo = { "x": x, "z": z, "radio": radio }
+            except (KeyError, ValueError, TypeError):
+                bloqueo = None
+        else:
+            bloqueo = None
+
+
         return {
             "accion": accion,
             "numCars": numCars,
             "trafico": trafico,
-            "semaforo": semaforo
+            "semaforo": semaforo, 
+            "bloqueo": bloqueo
         }
 
     except Exception as e:
