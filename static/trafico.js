@@ -16,10 +16,11 @@ let modoEliminarBloqueo = false;
 const bloqueos = [];
 const bloqueoMeshes = [];
 
+let mostrarNombresCalles = false;
 let grafoCalles = new Map();
 
 // ----- CARGA DE RECURSOS -----
-//Carpeta /json
+//Calles
 async function cargarCalles() {
   try {
     const response = await fetch('json/rutas.json');
@@ -33,7 +34,7 @@ async function cargarCalles() {
   }
 }
 
-//Carpeta /json
+//Rutas a base de las calles previas
 async function cargarRutasAutos() {
   try {
     const response = await fetch('json/rutas_autos.json');
@@ -47,32 +48,36 @@ async function cargarRutasAutos() {
   }
 }
 
-function puntoClave(p) {
+// ----- CONSTRUCCION DE CALLES COMO GRAFO ------
+function clave(p) {
   return `${p.x},${p.y}`;
 }
 
 function construirGrafo() {
+  grafoCalles.clear(); // Reiniciar
+
   Object.keys(calles).forEach(calleKey => {
     const puntos = calles[calleKey];
+
     for (let i = 0; i < puntos.length - 1; i++) {
       const p1 = puntos[i];
       const p2 = puntos[i + 1];
 
-      // Si el nodo (intersección) no existe, lo creamos
-      if (!grafoCalles.has(p1)) {
-        grafoCalles.set(p1, []);
-      }
-      if (!grafoCalles.has(p2)) {
-        grafoCalles.set(p2, []);
-      }
+      const k1 = clave(p1);
+      const k2 = clave(p2);
 
-      // Agregar la conexión entre las intersecciones
-      grafoCalles.get(p1).push(p2);
-      grafoCalles.get(p2).push(p1); // El grafo es bidireccional
+      if (!grafoCalles.has(k1)) grafoCalles.set(k1, []);
+      if (!grafoCalles.has(k2)) grafoCalles.set(k2, []);
+
+      grafoCalles.get(k1).push({ destino: k2, coord: p2 });
+      grafoCalles.get(k2).push({ destino: k1, coord: p1 }); // Bidireccional
     }
   });
-}
 
+  console.log("Grafo construido:", grafoCalles);
+  console.log("Nodos en grafo:", grafoCalles.size);
+
+}
 
 // ----- CREACIÓN DE ELEMENTOS -----
 function crearEscuela(posicion = { x: 0, z: 0 }, escala = 1) {
@@ -218,21 +223,32 @@ carGroup.scale.set(2, 2, 2); // Escala el auto 1.5 veces más grande
   };
 }
 
+//Multiples autos
 function crearAutos(cantidad, velocidadBase) {
   const rutasKeys = Object.keys(rutasAutos);
   const colores = [0xFF0000, 0x0000FF, 0x00FF00, 0xFFFF00, 0xFF00FF, 0x00FFFF, 0xFFA500, 0x800080];
 
   for (let i = 0; i < cantidad; i++) {
     const rutaSeleccionada = rutasKeys[i % rutasKeys.length];
+    
+    // Obtener calles de la ruta, solo si existen en calles
     const callesDeRuta = rutasAutos[rutaSeleccionada]
-      .map(c => calles[c])
-      .filter(calle => calle); // Asegura que existan las calles
+      .map(nombreCalle => calles[nombreCalle])
+      .filter(calle => calle && calle.length > 0);
+
+    // Aplanar puntos de todas las calles para formar la ruta completa
     const puntos = callesDeRuta.flat();
-    if (puntos.length < 2) continue;
+
+    if (puntos.length < 2) {
+      console.warn(`Ruta '${rutaSeleccionada}' tiene menos de 2 puntos. Auto no creado.`);
+      continue; // No crear auto si la ruta no tiene puntos suficientes
+    }
 
     const color = colores[i % colores.length];
-    const auto = createCar(color); // usa el auto hecho con geometría simple
-    auto.group.position.set(puntos[0].x, 0.5, puntos[0].y); // posición inicial
+    const auto = createCar(color);
+
+    // Posición inicial en el primer punto de la ruta
+    auto.group.position.set(puntos[0].x, 0.5, puntos[0].y);
 
     auto.group.userData = {
       ruta: puntos,
@@ -247,21 +263,6 @@ function crearAutos(cantidad, velocidadBase) {
   }
 }
 
-
-//Obstruccion en calles
-function crearBloqueo(scene, position, radio = 5) {
-  const geometry = new THREE.CircleGeometry(radio, 32);
-  const material = new THREE.MeshBasicMaterial({ color: 0xffaa00, opacity: 0.5, transparent: true });
-  const bloqueo = new THREE.Mesh(geometry, material);
-  bloqueo.rotation.x = -Math.PI / 2;
-  bloqueo.position.set(position.x, 0.01, position.z);
-  scene.add(bloqueo);
-
-  bloqueos.push({ position, radio });
-  bloqueoMeshes.push(bloqueo);
-}
-
-let mostrarNombresCalles = false;
 
 function dibujarCalles() {
   // Eliminar las calles anteriores
@@ -357,8 +358,7 @@ function dibujarCalles() {
   });
 }
 
-
-// ----- Animacion -----
+// ----- ANIMACION -----
 function animate() {
   if (!running) return;
   const delta = clock.getDelta();
@@ -372,7 +372,7 @@ function animate() {
   animationId = requestAnimationFrame(animate);
 }
 
-// -----Funcionalidad de objetos-----
+// -----FUNCIONALIDAD DE OBJETOS-----
 function actualizarSemaforos() {
   const time = performance.now() * 0.001;
   let state = "red";
@@ -404,6 +404,8 @@ function moverAutos(delta) {
     const speed = carSpeeds[i];
     let detener = false;
 
+    if (!puntos || puntos.length < 2) return;
+
     // Verificar semáforos
     semaforos.forEach(semaforo => {
       const dist = car.position.distanceTo(semaforo.position);
@@ -431,71 +433,61 @@ function moverAutos(delta) {
         }
       }
     } else {
-      // Si ya no hay bloqueo, limpiamos el temporizador
-      car.userData.waitStart = null;
+      car.userData.waitStart = null; // limpiar si ya no hay bloqueo
     }
 
     // Verificar colisiones entre autos
     verificarColisiones(car);
 
     if (!detener) {
-      let p1 = puntos[index];
-      let p2 = puntos[index + 1];
-      if (!p2) {
-        // Ruta terminada, calcular nueva ruta aleatoria
+      // Si ya llegó al final de su ruta, asignar una nueva
+      if (index >= puntos.length - 1) {
         const posActual = { x: car.position.x, y: car.position.z };
         const siguienteInterseccion = obtenerInterseccionAleatoria(car.position);
-        const nuevaRuta = calcularRutaDesde(posActual, siguienteInterseccion); // Usa el grafo cargado en JS
+        const nuevaRuta = calcularRutaDesde(posActual, siguienteInterseccion);
 
         if (nuevaRuta && nuevaRuta.length >= 2) {
           car.userData.ruta = nuevaRuta;
           car.userData.index = 0;
           car.userData.t = 0;
         } else {
-          // No se pudo encontrar nueva ruta, detener el auto
+          console.warn("No se pudo generar nueva ruta, auto detenido.");
           return;
         }
       }
 
-      // Movimiento a lo largo de la ruta
+      let p1 = puntos[car.userData.index];
+      let p2 = puntos[car.userData.index + 1];
+      if (!p1 || !p2) return; // seguridad extra
+
+      // Movimiento a lo largo del segmento
       car.userData.t += speed * delta * 60;
       if (car.userData.t >= 1) {
         car.userData.index++;
         car.userData.t = 0;
       }
 
-      // Calcular posición interpolada
+      // Recalcular p1 y p2 si avanzó de segmento
       p1 = puntos[car.userData.index];
       p2 = puntos[car.userData.index + 1];
+      if (!p1 || !p2) return;
+
       const x = THREE.MathUtils.lerp(p1.x, p2.x, car.userData.t);
       const z = THREE.MathUtils.lerp(p1.y, p2.y, car.userData.t);
       car.position.set(x, 0.5, z);
+
       const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
       car.rotation.y = -angle;
+
+      if (!car.userData.ruta || car.userData.index >= car.userData.ruta.length - 1) {
+        reasignarRutaAuto(car);
+      }
+
     }
   });
 }
 
-// Función para obtener una intersección aleatoria adyacente
-function obtenerInterseccionAleatoria(posicion) {
-  const interseccionesCercanas = [];
-  
-  grafoCalles.forEach((conexiones, interseccion) => {
-    // Verificar si la intersección está cerca de la posición del auto
-    const dist = new THREE.Vector3(posicion.x, 0, posicion.z).distanceTo(new THREE.Vector3(interseccion.x, 0, interseccion.y));
-    if (dist < 30) {  // Distancia para considerar intersección cercana (ajusta según lo que necesites)
-      interseccionesCercanas.push(interseccion);
-    }
-  });
-
-  // Elegir una intersección aleatoria cercana
-  if (interseccionesCercanas.length > 0) {
-    return interseccionesCercanas[Math.floor(Math.random() * interseccionesCercanas.length)];
-  }
-  
-  return null; // No hay intersecciones cercanas
-}
-
+// ----- FUNCIONALIDADES EXTRA -----
 
 function calcularVelocidadBase(nivel) {
   switch (nivel.toLowerCase()) {
@@ -518,7 +510,124 @@ function verificarColisiones(car) {
 }
 
 
-// ----- Operaciones basicas -----
+//Obstruccion en calles
+function crearBloqueo(scene, position, radio = 5) {
+  const geometry = new THREE.CircleGeometry(radio, 32);
+  const material = new THREE.MeshBasicMaterial({ color: 0xffaa00, opacity: 0.5, transparent: true });
+  const bloqueo = new THREE.Mesh(geometry, material);
+  bloqueo.rotation.x = -Math.PI / 2;
+  bloqueo.position.set(position.x, 0.01, position.z);
+  scene.add(bloqueo);
+
+  bloqueos.push({ position, radio });
+  bloqueoMeshes.push(bloqueo);
+}
+
+// ----- FUNCIONALIDADES DEL GRAFO -----
+function calcularRutaDesde(posActual, destino) {
+  const inicioClave = encontrarNodoMasCercano(posActual);
+  const destinoClave = encontrarNodoMasCercano(destino);
+
+  if (!grafoCalles.has(inicioClave) || !grafoCalles.has(destinoClave)) return null;
+
+  const visitados = new Set();
+  const cola = [[inicioClave]];
+
+  while (cola.length > 0) {
+    const camino = cola.shift();
+    const nodo = camino[camino.length - 1];
+
+    if (nodo === destinoClave) {
+      // Convertir claves a puntos {x, y}
+      return camino.map(clave => {
+        const [x, y] = clave.split(',').map(Number);
+        return { x, y };
+      });
+    }
+
+    if (!visitados.has(nodo)) {
+      visitados.add(nodo);
+
+      const vecinos = grafoCalles.get(nodo);
+      vecinos.forEach(vecino => {
+        if (!visitados.has(vecino.destino)) {
+          cola.push([...camino, vecino.destino]);
+        }
+      });
+    }
+  }
+
+  return null; // No se encontró camino
+}
+
+
+// Función para obtener una intersección aleatoria adyacente
+function obtenerInterseccionAleatoria(posicion) {
+  const interseccionesCercanas = [];
+
+  grafoCalles.forEach((vecinos, claveNodo) => {
+    const [x, y] = claveNodo.split(',').map(Number);
+    const dist = Math.sqrt((x - posicion.x) ** 2 + (y - posicion.z) ** 2);
+    if (dist < 30) {
+      interseccionesCercanas.push(claveNodo);
+    }
+  });
+
+  if (interseccionesCercanas.length > 0) {
+    return interseccionesCercanas[Math.floor(Math.random() * interseccionesCercanas.length)];
+  }
+
+  return null;
+}
+
+function encontrarNodoMasCercano(pos) {
+  let minDist = Infinity;
+  let nodoCercano = null;
+
+  for (const clave of grafoCalles.keys()) {
+    const [x, y] = clave.split(',').map(Number);
+    const dist = Math.hypot(pos.x - x, pos.y - y);
+    if (dist < minDist) {
+      minDist = dist;
+      nodoCercano = clave;
+    }
+  }
+
+  return nodoCercano;
+}
+
+function reasignarRutaAuto(car) {
+  // Obtener las claves de rutas disponibles
+  const rutasKeys = Object.keys(rutasAutos);
+
+  // Filtrar rutas que NO tengan bloqueo
+  const rutasDisponibles = rutasKeys.filter(key => {
+    // Para cada calle en la ruta, juntar todos los puntos en un solo array
+    const callesDeRuta = rutasAutos[key].map(calleNombre => calles[calleNombre]).flat();
+    return !rutaTieneBloqueo(callesDeRuta);
+  });
+
+  if (rutasDisponibles.length === 0) {
+    console.warn("No hay rutas alternativas disponibles para asignar.");
+    return false; // No se pudo asignar ruta
+  }
+
+  // Elegir una ruta aleatoria de las disponibles
+  const nuevaRutaKey = rutasDisponibles[Math.floor(Math.random() * rutasDisponibles.length)];
+
+  // Obtener la ruta en puntos (lista de {x,y})
+  const nuevaRuta = rutasAutos[nuevaRutaKey].map(calleNombre => calles[calleNombre]).flat();
+
+  // Asignar la ruta al auto
+  car.userData.ruta = nuevaRuta;
+  car.userData.index = 0; // reiniciar índice de ruta
+  car.userData.t = 0;     // reiniciar progreso en segmento
+
+  console.log(`Auto reasignado a la ruta ${nuevaRutaKey}`);
+  return true;
+}
+
+// ----- OPERACIONES BASICAS -----
 function playSim() {
   if (!running) {
     running = true;
@@ -543,7 +652,7 @@ function reloadSim() {
   renderer.render(scene, camera);
 }
 
-//----- Operaciones extra -----
+//----- OPERACIONES EXTRA -----
 function rutaTieneBloqueo(ruta) {
   return ruta.some(punto => {
     return bloqueos.some(b => {
@@ -573,7 +682,7 @@ function cambiarRutaAuto(car) {
   }
 }
 
-// -----Procesamiento de prompteo-----
+// ----- PROCESAMIENTO DE PROMPTEO-----
 async function enviarPrompt() {
   const inputValue = document.getElementById("instruction-input").value.trim();
   if (!inputValue) return console.warn("No hay instrucción para enviar.");
@@ -596,7 +705,7 @@ async function enviarPrompt() {
   }
 }
 
-// ----- Inicializacion -----
+// -----  INICIALIZACION -----
 async function init() {
   await cargarCalles();
   await cargarRutasAutos();
@@ -679,7 +788,7 @@ window.addEventListener('DOMContentLoaded', () => {
     mostrarNombresCalles = !mostrarNombresCalles;
     const spanTexto = document.getElementById("btnTexto");
     spanTexto.textContent = mostrarNombresCalles ? "Ocultar nombre de calles" : "Mostrar nombre de calles";
-    dibujarCallesDesdeJSON();
+    dibujarCalles();
   });
 });
 
