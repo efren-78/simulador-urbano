@@ -16,6 +16,9 @@ let modoEliminarBloqueo = false;
 const bloqueos = [];
 const bloqueoMeshes = [];
 
+let currentView = "top"; // top | street | follow | dron
+let followCar = null; // auto a seguir (por ahora null)
+
 let mostrarNombresCalles = false;
 let grafoCalles = new Map();
 
@@ -23,13 +26,13 @@ let grafoCalles = new Map();
 //Calles
 async function cargarCalles() {
   try {
-    const response = await fetch('json/rutas.json');
+    const response = await fetch("json/rutas.json");
     if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
     calles = await response.json();
-    console.log('Calles cargadas:', calles);
+    console.log("Calles cargadas:", calles);
     return true;
   } catch (error) {
-    console.error('Error cargando calles:', error);
+    console.error("Error cargando calles:", error);
     return false;
   }
 }
@@ -37,13 +40,13 @@ async function cargarCalles() {
 //Rutas a base de las calles previas
 async function cargarRutasAutos() {
   try {
-    const response = await fetch('json/rutas_autos.json');
+    const response = await fetch("json/rutas_autos.json");
     if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
     rutasAutos = await response.json();
-    console.log('Rutas de autos cargadas:', rutasAutos);
+    console.log("Rutas de autos cargadas:", rutasAutos);
     return true;
   } catch (error) {
-    console.error('Error cargando rutas de autos:', error);
+    console.error("Error cargando rutas de autos:", error);
     return false;
   }
 }
@@ -56,7 +59,7 @@ function clave(p) {
 function construirGrafo() {
   grafoCalles.clear(); // Reiniciar
 
-  Object.keys(calles).forEach(calleKey => {
+  Object.keys(calles).forEach((calleKey) => {
     const puntos = calles[calleKey];
 
     for (let i = 0; i < puntos.length - 1; i++) {
@@ -76,7 +79,6 @@ function construirGrafo() {
 
   console.log("Grafo construido:", grafoCalles);
   console.log("Nodos en grafo:", grafoCalles.size);
-
 }
 
 // ----- CREACIÓN DE ELEMENTOS -----
@@ -134,7 +136,7 @@ function crearSemaforo(position, initialState = "red") {
   const colores = {
     red: 0xff0000,
     yellow: 0xffff00,
-    green: 0x00ff00
+    green: 0x00ff00,
   };
 
   const grupo = new THREE.Group();
@@ -162,7 +164,7 @@ function crearSemaforo(position, initialState = "red") {
       new THREE.SphereGeometry(0.3, 16, 16),
       new THREE.MeshStandardMaterial({
         color: colores[estado],
-        emissive: initialState === estado ? colores[estado] : 0x000000
+        emissive: initialState === estado ? colores[estado] : 0x000000,
       })
     );
     luz.position.set(0, 6.9 - i * 0.9, 0.6); // Posiciones verticales dentro de la caja
@@ -206,41 +208,46 @@ function createCar(color) {
     { x: 1.3, y: 0.4, z: 1.2 },
     { x: 1.3, y: 0.4, z: -1.2 },
     { x: -1.3, y: 0.4, z: 1.2 },
-    { x: -1.3, y: 0.4, z: -1.2 }
+    { x: -1.3, y: 0.4, z: -1.2 },
   ];
 
-  positions.forEach(pos => {
+  positions.forEach((pos) => {
     const wheel = new THREE.Mesh(wheelGeometry, wheelMaterial);
     wheel.position.set(pos.x, pos.y, pos.z);
     wheel.rotation.z = Math.PI / 2;
     wheel.castShadow = true;
     carGroup.add(wheel);
   });
-carGroup.scale.set(2, 2, 2); // Escala el auto 1.5 veces más grande
+  carGroup.scale.set(2, 2, 2); // Escala el auto 1.5 veces más grande
 
   return {
-    group: carGroup
+    group: carGroup,
   };
 }
 
 //Multiples autos
 function crearAutos(cantidad, velocidadBase) {
   const rutasKeys = Object.keys(rutasAutos);
-  const colores = [0xFF0000, 0x0000FF, 0x00FF00, 0xFFFF00, 0xFF00FF, 0x00FFFF, 0xFFA500, 0x800080];
+  const colores = [
+    0xff0000, 0x0000ff, 0x00ff00, 0xffff00, 0xff00ff, 0x00ffff, 0xffa500,
+    0x800080,
+  ];
 
   for (let i = 0; i < cantidad; i++) {
     const rutaSeleccionada = rutasKeys[i % rutasKeys.length];
-    
+
     // Obtener calles de la ruta, solo si existen en calles
     const callesDeRuta = rutasAutos[rutaSeleccionada]
-      .map(nombreCalle => calles[nombreCalle])
-      .filter(calle => calle && calle.length > 0);
+      .map((nombreCalle) => calles[nombreCalle])
+      .filter((calle) => calle && calle.length > 0);
 
     // Aplanar puntos de todas las calles para formar la ruta completa
     const puntos = callesDeRuta.flat();
 
     if (puntos.length < 2) {
-      console.warn(`Ruta '${rutaSeleccionada}' tiene menos de 2 puntos. Auto no creado.`);
+      console.warn(
+        `Ruta '${rutaSeleccionada}' tiene menos de 2 puntos. Auto no creado.`
+      );
       continue; // No crear auto si la ruta no tiene puntos suficientes
     }
 
@@ -253,7 +260,7 @@ function crearAutos(cantidad, velocidadBase) {
     auto.group.userData = {
       ruta: puntos,
       index: 0,
-      t: 0
+      t: 0,
     };
 
     cars.push(auto.group);
@@ -263,13 +270,12 @@ function crearAutos(cantidad, velocidadBase) {
   }
 }
 
-
 function dibujarCalles() {
   // Eliminar las calles anteriores
-  callesMeshes.forEach(mesh => scene.remove(mesh));
+  callesMeshes.forEach((mesh) => scene.remove(mesh));
   callesMeshes.length = 0;
 
-  Object.keys(calles).forEach(calleKey => {
+  Object.keys(calles).forEach((calleKey) => {
     const puntos = calles[calleKey];
     if (puntos.length < 2) return;
 
@@ -289,7 +295,7 @@ function dibujarCalles() {
     const geometryAmarilla = new THREE.PlaneGeometry(longitud, ancho);
     const materialAmarilla = new THREE.MeshBasicMaterial({
       color: 0xffff00,
-      side: THREE.DoubleSide
+      side: THREE.DoubleSide,
     });
 
     const meshAmarillo = new THREE.Mesh(geometryAmarilla, materialAmarilla);
@@ -307,7 +313,7 @@ function dibujarCalles() {
     const geometryBorde = new THREE.PlaneGeometry(longitud, 3);
     const materialBorde = new THREE.MeshBasicMaterial({
       color: 0x000000,
-      side: THREE.DoubleSide
+      side: THREE.DoubleSide,
     });
 
     const bordeDerecho = new THREE.Mesh(geometryBorde, materialBorde);
@@ -346,7 +352,10 @@ function dibujarCalles() {
       texture.needsUpdate = true;
       texture.minFilter = THREE.LinearFilter;
 
-      const materialText = new THREE.SpriteMaterial({ map: texture, transparent: true });
+      const materialText = new THREE.SpriteMaterial({
+        map: texture,
+        transparent: true,
+      });
       const sprite = new THREE.Sprite(materialText);
       sprite.scale.set(20, 5, 1);
       sprite.position.set(posX, 2.5, posZ);
@@ -368,6 +377,8 @@ function animate() {
   actualizarSemaforos();
   moverAutos(delta);
 
+  updateCamera();
+
   renderer.render(scene, camera);
   animationId = requestAnimationFrame(animate);
 }
@@ -382,15 +393,17 @@ function actualizarSemaforos() {
   const colores = {
     red: 0xff0000,
     yellow: 0xffff00,
-    green: 0x00ff00
+    green: 0x00ff00,
   };
 
-  semaforos.forEach(semaforo => {
+  semaforos.forEach((semaforo) => {
     const estados = ["red", "yellow", "green"];
-    estados.forEach(color => {
+    estados.forEach((color) => {
       const luz = semaforo.getObjectByName(color);
       if (luz && luz.material && luz.material.emissive) {
-        luz.material.emissive.setHex(color === state ? colores[color] : 0x000000);
+        luz.material.emissive.setHex(
+          color === state ? colores[color] : 0x000000
+        );
       }
     });
     semaforo.userData.state = state;
@@ -407,14 +420,16 @@ function moverAutos(delta) {
     if (!puntos || puntos.length < 2) return;
 
     // Verificar semáforos
-    semaforos.forEach(semaforo => {
+    semaforos.forEach((semaforo) => {
       const dist = car.position.distanceTo(semaforo.position);
       if (dist < 3 && semaforo.userData.state === "red") detener = true;
     });
 
     // Verificar bloqueos
-    bloqueos.forEach(b => {
-      const dist = car.position.distanceTo(new THREE.Vector3(b.position.x, 0, b.position.z));
+    bloqueos.forEach((b) => {
+      const dist = car.position.distanceTo(
+        new THREE.Vector3(b.position.x, 0, b.position.z)
+      );
       if (dist < b.radio) detener = true;
     });
 
@@ -443,7 +458,9 @@ function moverAutos(delta) {
       // Si ya llegó al final de su ruta, asignar una nueva
       if (index >= puntos.length - 1) {
         const posActual = { x: car.position.x, y: car.position.z };
-        const siguienteInterseccion = obtenerInterseccionAleatoria(car.position);
+        const siguienteInterseccion = obtenerInterseccionAleatoria(
+          car.position
+        );
         const nuevaRuta = calcularRutaDesde(posActual, siguienteInterseccion);
 
         if (nuevaRuta && nuevaRuta.length >= 2) {
@@ -479,10 +496,12 @@ function moverAutos(delta) {
       const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
       car.rotation.y = -angle;
 
-      if (!car.userData.ruta || car.userData.index >= car.userData.ruta.length - 1) {
+      if (
+        !car.userData.ruta ||
+        car.userData.index >= car.userData.ruta.length - 1
+      ) {
         reasignarRutaAuto(car);
       }
-
     }
   });
 }
@@ -491,10 +510,14 @@ function moverAutos(delta) {
 
 function calcularVelocidadBase(nivel) {
   switch (nivel.toLowerCase()) {
-    case "fluido": return 0.001;
-    case "moderado": return 0.0006;
-    case "congestionado": return 0.0003;
-    default: return 0.001;
+    case "fluido":
+      return 0.001;
+    case "moderado":
+      return 0.0006;
+    case "congestionado":
+      return 0.0003;
+    default:
+      return 0.001;
   }
 }
 
@@ -502,7 +525,8 @@ function verificarColisiones(car) {
   cars.forEach((otroAuto) => {
     if (car !== otroAuto) {
       const distancia = car.position.distanceTo(otroAuto.position);
-      if (distancia < 2) { // Si están demasiado cerca
+      if (distancia < 2) {
+        // Si están demasiado cerca
         car.userData.waitStart = performance.now(); // Detener el auto temporalmente
       }
     }
@@ -512,7 +536,11 @@ function verificarColisiones(car) {
 //Obstruccion en calles
 function crearBloqueo(scene, position, radio = 5) {
   const geometry = new THREE.CircleGeometry(radio, 32);
-  const material = new THREE.MeshBasicMaterial({ color: 0xffaa00, opacity: 0.5, transparent: true });
+  const material = new THREE.MeshBasicMaterial({
+    color: 0xffaa00,
+    opacity: 0.5,
+    transparent: true,
+  });
   const bloqueo = new THREE.Mesh(geometry, material);
   bloqueo.rotation.x = -Math.PI / 2;
   bloqueo.position.set(position.x, 0.01, position.z);
@@ -526,10 +554,12 @@ function reportarBloqueoBackend(position, radio = 5) {
   fetch("http://localhost:8000/bloqueo", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ x: position.x, z: position.z, radio: radio })
-  }).then(res => {
-    if (!res.ok) throw new Error("Error al reportar el bloqueo al backend");
-  }).catch(err => console.error("Error de red al reportar bloqueo:", err));
+    body: JSON.stringify({ x: position.x, z: position.z, radio: radio }),
+  })
+    .then((res) => {
+      if (!res.ok) throw new Error("Error al reportar el bloqueo al backend");
+    })
+    .catch((err) => console.error("Error de red al reportar bloqueo:", err));
 }
 
 function agregarBloqueo(scene, position, radio = 5) {
@@ -537,13 +567,13 @@ function agregarBloqueo(scene, position, radio = 5) {
   reportarBloqueoBackend(position, radio);
 }
 
-
 // ----- FUNCIONALIDADES DEL GRAFO -----
 function calcularRutaDesde(posActual, destino) {
   const inicioClave = encontrarNodoMasCercano(posActual);
   const destinoClave = encontrarNodoMasCercano(destino);
 
-  if (!grafoCalles.has(inicioClave) || !grafoCalles.has(destinoClave)) return null;
+  if (!grafoCalles.has(inicioClave) || !grafoCalles.has(destinoClave))
+    return null;
 
   const visitados = new Set();
   const cola = [[inicioClave]];
@@ -554,8 +584,8 @@ function calcularRutaDesde(posActual, destino) {
 
     if (nodo === destinoClave) {
       // Convertir claves a puntos {x, y}
-      return camino.map(clave => {
-        const [x, y] = clave.split(',').map(Number);
+      return camino.map((clave) => {
+        const [x, y] = clave.split(",").map(Number);
         return { x, y };
       });
     }
@@ -564,7 +594,7 @@ function calcularRutaDesde(posActual, destino) {
       visitados.add(nodo);
 
       const vecinos = grafoCalles.get(nodo);
-      vecinos.forEach(vecino => {
+      vecinos.forEach((vecino) => {
         if (!visitados.has(vecino.destino)) {
           cola.push([...camino, vecino.destino]);
         }
@@ -575,13 +605,12 @@ function calcularRutaDesde(posActual, destino) {
   return null; // No se encontró camino
 }
 
-
 // Función para obtener una intersección aleatoria adyacente
 function obtenerInterseccionAleatoria(posicion) {
   const interseccionesCercanas = [];
 
   grafoCalles.forEach((vecinos, claveNodo) => {
-    const [x, y] = claveNodo.split(',').map(Number);
+    const [x, y] = claveNodo.split(",").map(Number);
     const dist = Math.sqrt((x - posicion.x) ** 2 + (y - posicion.z) ** 2);
     if (dist < 30) {
       interseccionesCercanas.push(claveNodo);
@@ -589,7 +618,9 @@ function obtenerInterseccionAleatoria(posicion) {
   });
 
   if (interseccionesCercanas.length > 0) {
-    return interseccionesCercanas[Math.floor(Math.random() * interseccionesCercanas.length)];
+    return interseccionesCercanas[
+      Math.floor(Math.random() * interseccionesCercanas.length)
+    ];
   }
 
   return null;
@@ -600,7 +631,7 @@ function encontrarNodoMasCercano(pos) {
   let nodoCercano = null;
 
   for (const clave of grafoCalles.keys()) {
-    const [x, y] = clave.split(',').map(Number);
+    const [x, y] = clave.split(",").map(Number);
     const dist = Math.hypot(pos.x - x, pos.y - y);
     if (dist < minDist) {
       minDist = dist;
@@ -616,9 +647,11 @@ function reasignarRutaAuto(car) {
   const rutasKeys = Object.keys(rutasAutos);
 
   // Filtrar rutas que NO tengan bloqueo
-  const rutasDisponibles = rutasKeys.filter(key => {
+  const rutasDisponibles = rutasKeys.filter((key) => {
     // Para cada calle en la ruta, juntar todos los puntos en un solo array
-    const callesDeRuta = rutasAutos[key].map(calleNombre => calles[calleNombre]).flat();
+    const callesDeRuta = rutasAutos[key]
+      .map((calleNombre) => calles[calleNombre])
+      .flat();
     return !rutaTieneBloqueo(callesDeRuta);
   });
 
@@ -628,15 +661,18 @@ function reasignarRutaAuto(car) {
   }
 
   // Elegir una ruta aleatoria de las disponibles
-  const nuevaRutaKey = rutasDisponibles[Math.floor(Math.random() * rutasDisponibles.length)];
+  const nuevaRutaKey =
+    rutasDisponibles[Math.floor(Math.random() * rutasDisponibles.length)];
 
   // Obtener la ruta en puntos (lista de {x,y})
-  const nuevaRuta = rutasAutos[nuevaRutaKey].map(calleNombre => calles[calleNombre]).flat();
+  const nuevaRuta = rutasAutos[nuevaRutaKey]
+    .map((calleNombre) => calles[calleNombre])
+    .flat();
 
   // Asignar la ruta al auto
   car.userData.ruta = nuevaRuta;
   car.userData.index = 0; // reiniciar índice de ruta
-  car.userData.t = 0;     // reiniciar progreso en segmento
+  car.userData.t = 0; // reiniciar progreso en segmento
 
   console.log(`Auto reasignado a la ruta ${nuevaRutaKey}`);
   return true;
@@ -669,10 +705,11 @@ function reloadSim() {
 
 //----- OPERACIONES EXTRA -----
 function rutaTieneBloqueo(ruta) {
-  return ruta.some(punto => {
-    return bloqueos.some(b => {
-      const dist = new THREE.Vector3(punto.x, 0, punto.y)
-        .distanceTo(new THREE.Vector3(b.position.x, 0, b.position.z));
+  return ruta.some((punto) => {
+    return bloqueos.some((b) => {
+      const dist = new THREE.Vector3(punto.x, 0, punto.y).distanceTo(
+        new THREE.Vector3(b.position.x, 0, b.position.z)
+      );
       return dist < b.radio;
     });
   });
@@ -680,14 +717,15 @@ function rutaTieneBloqueo(ruta) {
 
 function cambiarRutaAuto(car) {
   const rutasKeys = Object.keys(rutasAutos);
-  const rutasDisponibles = rutasKeys.filter(key => {
-    const callesDeRuta = rutasAutos[key].map(c => calles[c]).flat();
+  const rutasDisponibles = rutasKeys.filter((key) => {
+    const callesDeRuta = rutasAutos[key].map((c) => calles[c]).flat();
     return !rutaTieneBloqueo(callesDeRuta);
   });
 
   if (rutasDisponibles.length > 0) {
-    const nuevaRutaKey = rutasDisponibles[Math.floor(Math.random() * rutasDisponibles.length)];
-    const nuevaRuta = rutasAutos[nuevaRutaKey].map(c => calles[c]).flat();
+    const nuevaRutaKey =
+      rutasDisponibles[Math.floor(Math.random() * rutasDisponibles.length)];
+    const nuevaRuta = rutasAutos[nuevaRutaKey].map((c) => calles[c]).flat();
     car.userData.ruta = nuevaRuta;
     car.userData.index = 0;
     car.userData.t = 0;
@@ -706,7 +744,7 @@ async function enviarPrompt() {
     const response = await fetch("http://localhost:8000/nlp", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prompt: inputValue, max_tokens: 150 })
+      body: JSON.stringify({ prompt: inputValue, max_tokens: 150 }),
     });
 
     const data = await response.json();
@@ -717,15 +755,18 @@ async function enviarPrompt() {
     if (accion.includes("start")) playSim();
     else if (accion.includes("stop")) stopSim();
     else if (accion.includes("reload")) reloadSim();
-    else if (accion.includes("bloqueo") && data.x !== undefined && data.z !== undefined) {
+    else if (
+      accion.includes("bloqueo") &&
+      data.x !== undefined &&
+      data.z !== undefined
+    ) {
       const pos = { x: data.x, z: data.z };
-      agregarBloqueo(scene, pos, data.radio || 5);  // usa radio recibido o por defecto 5
+      agregarBloqueo(scene, pos, data.radio || 5); // usa radio recibido o por defecto 5
     }
   } catch (error) {
     console.error("Error al enviar prompt:", error);
   }
 }
-
 
 // -----  INICIALIZACION -----
 async function init() {
@@ -737,48 +778,48 @@ async function init() {
 
   scene = new THREE.Scene();
 
-
   const loader = new THREE.TextureLoader();
   loader.load(
-    'imagenes/cielo4.png',
+    "imagenes/cielo4.png",
     function (texture) {
-      console.log('Imagen cargada correctamente');
+      console.log("Imagen cargada correctamente");
       scene.background = texture;
     },
     undefined,
     function (err) {
-      console.error(' Error cargando la imagen', err);
+      console.error(" Error cargando la imagen", err);
     }
   );
 
-
-
   const textureLoader = new THREE.TextureLoader();
-  const groundTexture = textureLoader.load('imagenes/pasto.jpg');
+  const groundTexture = textureLoader.load("imagenes/pasto.jpg");
 
   groundTexture.wrapS = THREE.RepeatWrapping;
   groundTexture.wrapT = THREE.RepeatWrapping;
   groundTexture.repeat.set(10, 10); // Repetir la textura en el suelo
 
   const groundMaterial = new THREE.MeshStandardMaterial({
-  map: groundTexture
-});
+    map: groundTexture,
+  });
 
-const ground = new THREE.Mesh(
-  new THREE.PlaneGeometry(200, 200),
-  groundMaterial
-);
-ground.rotation.x = -Math.PI / 2;
-scene.add(ground);
-ground.userData.type = "ground";
-
-
+  const ground = new THREE.Mesh(
+    new THREE.PlaneGeometry(300, 200),
+    groundMaterial
+  );
+  ground.rotation.x = -Math.PI / 2;
+  scene.add(ground);
+  ground.userData.type = "ground";
 
   const canvas = document.getElementById("mapaCanvas");
   renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
 
-  camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+  camera = new THREE.PerspectiveCamera(
+    75,
+    window.innerWidth / window.innerHeight,
+    0.1,
+    1000
+  );
   camera.position.set(0, 100, 100);
   camera.lookAt(0, 0, 0);
 
@@ -793,7 +834,6 @@ ground.userData.type = "ground";
   crearSemaforo({ x: -5, z: -82 }, "red");
   crearEscuela({ x: -40, z: -40 });
 
-
   const numCars = 10; // Lo ajusta backend después
   const trafico = "moderado";
   crearAutos(numCars, calcularVelocidadBase(trafico));
@@ -801,29 +841,76 @@ ground.userData.type = "ground";
   renderer.render(scene, camera);
 }
 
-window.addEventListener('DOMContentLoaded', init);
+window.addEventListener("DOMContentLoaded", init);
 
-window.addEventListener('DOMContentLoaded', () => {
+window.addEventListener("DOMContentLoaded", () => {
   const btnToggleNombres = document.getElementById("btnToggleNombres");
 
   btnToggleNombres.addEventListener("click", () => {
     mostrarNombresCalles = !mostrarNombresCalles;
     const spanTexto = document.getElementById("btnTexto");
-    spanTexto.textContent = mostrarNombresCalles ? "Ocultar nombre de calles" : "Mostrar nombre de calles";
+    spanTexto.textContent = mostrarNombresCalles
+      ? "Ocultar nombre de calles"
+      : "Mostrar nombre de calles";
     dibujarCalles();
   });
 });
 
+// ----- CONTROL DE VISTAS ----- //
+function updateCamera() {
+  switch (currentView) {
+    case "top": // Vista cenital
+      camera.position.set(0, 150, 0);
+      camera.lookAt(0, 0, 0);
+      break;
+
+    case "street": // Vista nivel calle
+      camera.position.set(-30, 5, 30);
+      camera.lookAt(0, 0, 0);
+      break;
+
+    case "follow": // Seguir auto
+      if (cars && cars.length > 0) {
+        if (!followCar) followCar = cars[0]; // seguir el primero por defecto
+        const carPos = followCar.position;
+        camera.position.set(carPos.x - 10, 8, carPos.z + 5);
+        camera.lookAt(carPos.x, carPos.y, carPos.z);
+      }
+      break;
+
+    case "dron": // Vista aérea inclinada
+      camera.position.set(50, 130, 140);
+      camera.lookAt(50, 30, 50);
+      break;
+  }
+}
+
+// Para cambiar manualmente el auto que seguimos
+let followIndex = 0;
+function siguienteAuto() {
+  if (cars.length > 0) {
+    followIndex = (followIndex + 1) % cars.length;
+    followCar = cars[followIndex];
+    currentView = "follow";
+    console.log("Siguiendo auto:", followIndex);
+  }
+}
 
 // ----- Eventos -----
 document.getElementById("play-button").addEventListener("click", () => {
-  fetch("http://localhost:8000/start").then(res => res.json()).then(() => playSim());
+  fetch("http://localhost:8000/start")
+    .then((res) => res.json())
+    .then(() => playSim());
 });
 document.getElementById("stop-button").addEventListener("click", () => {
-  fetch("http://localhost:8000/stop").then(res => res.json()).then(() => stopSim());
+  fetch("http://localhost:8000/stop")
+    .then((res) => res.json())
+    .then(() => stopSim());
 });
 document.getElementById("reload-button").addEventListener("click", () => {
-  fetch("http://localhost:8000/reload").then(res => res.json()).then(() => reloadSim());
+  fetch("http://localhost:8000/reload")
+    .then((res) => res.json())
+    .then(() => reloadSim());
 });
 
 document.getElementById("add-bloqueo").addEventListener("click", () => {
@@ -840,7 +927,7 @@ document.getElementById("remove-bloqueo").addEventListener("click", () => {
 
 document.getElementById("clear-bloqueos").addEventListener("click", () => {
   bloqueos.length = 0;
-  bloqueoMeshes.forEach(mesh => scene.remove(mesh));
+  bloqueoMeshes.forEach((mesh) => scene.remove(mesh));
   bloqueoMeshes.length = 0;
   console.log("Todos los bloqueos eliminados");
 });
@@ -854,25 +941,30 @@ document.getElementById("mapaCanvas").addEventListener("click", (event) => {
   mouse.x = ((event.clientX - rect.left) / canvas.clientWidth) * 2 - 1;
   mouse.y = -((event.clientY - rect.top) / canvas.clientHeight) * 2 + 1;
 
-
   raycaster.setFromCamera(mouse, camera);
   const intersects = raycaster.intersectObjects(scene.children, true);
 
   if (modoAgregarBloqueo) {
     // Agregar bloqueo solo en el suelo
-    const suelo = intersects.find(obj => obj.object.userData.type === "ground");
+    const suelo = intersects.find(
+      (obj) => obj.object.userData.type === "ground"
+    );
 
     if (suelo) {
       const punto = suelo.point;
       crearBloqueo(scene, { x: punto.x, z: punto.z }, 6);
-      console.log(`Bloqueo agregado en X=${punto.x.toFixed(2)}, Z=${punto.z.toFixed(2)}`);
+      console.log(
+        `Bloqueo agregado en X=${punto.x.toFixed(2)}, Z=${punto.z.toFixed(2)}`
+      );
     }
     modoAgregarBloqueo = false;
   }
 
   if (modoEliminarBloqueo) {
     // Eliminar si se clickea un bloqueo
-    const bloqueoHit = intersects.find(obj => bloqueoMeshes.includes(obj.object));
+    const bloqueoHit = intersects.find((obj) =>
+      bloqueoMeshes.includes(obj.object)
+    );
 
     if (bloqueoHit) {
       const index = bloqueoMeshes.indexOf(bloqueoHit.object);
@@ -887,14 +979,15 @@ document.getElementById("mapaCanvas").addEventListener("click", (event) => {
   }
 });
 
-
 //document.getElementById("button-main").addEventListener("click", enviarPrompt);
-document.getElementById("send-button").addEventListener("click", enviarPrompt)
+document.getElementById("send-button").addEventListener("click", enviarPrompt);
 
 // ----- Conexion websocket -----
 async function sincronizarEstado() {
   try {
-    const estado = await fetch("http://localhost:8000/estado").then(r => r.json());
+    const estado = await fetch("http://localhost:8000/estado").then((r) =>
+      r.json()
+    );
     console.log("Estado sincronizado:", estado);
 
     ajustarCantidadAutos(estado.numCars);
@@ -911,7 +1004,9 @@ sincronizarEstado();
 async function configurarSiNecesario() {
   try {
     // Consultar estado actual
-    const estado = await fetch("http://localhost:8000/estado").then(r => r.json());
+    const estado = await fetch("http://localhost:8000/estado").then((r) =>
+      r.json()
+    );
     console.log("Estado actual:", estado);
 
     // Si ya hay simulación corriendo, NO mandar configuración
@@ -933,8 +1028,8 @@ async function configurarSiNecesario() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           numCars: parseInt(numCars),
-          trafico: trafico
-        })
+          trafico: trafico,
+        }),
       });
       console.log("Configuración aplicada desde trafico.js");
     }
@@ -964,14 +1059,13 @@ socket.onmessage = ({ data }) => {
 
 // Ajustar cantidad de autos
 function ajustarCantidadAutos(cantidad) {
-    console.log("⏫ Ajustando cantidad de autos a:", cantidad);
+  console.log("⏫ Ajustando cantidad de autos a:", cantidad);
 
-  cars.forEach(car => scene.remove(car));
+  cars.forEach((car) => scene.remove(car));
   cars.length = 0;
   carRoutes.length = 0;
   carSpeeds.length = 0;
   crearAutos(cantidad, calcularVelocidadBase("moderado"));
-  
 }
 
 // Ajustar tráfico
@@ -988,12 +1082,16 @@ function setCameraZoom(newZoom) {
   camera.position.set(0, zoomLevel, zoomLevel);
   camera.lookAt(0, 0, 0);
 }
-document.getElementById("zoom-in").addEventListener("click", () => setCameraZoom(zoomLevel - 15));
-document.getElementById("zoom-out").addEventListener("click", () => setCameraZoom(zoomLevel + 20));
+document
+  .getElementById("zoom-in")
+  .addEventListener("click", () => setCameraZoom(zoomLevel - 15));
+document
+  .getElementById("zoom-out")
+  .addEventListener("click", () => setCameraZoom(zoomLevel + 20));
 
 // ----- Movimiento lateral de la cámara -----
 let camX = 0;
-let camZ = 100; // posición inicial 
+let camZ = 100; // posición inicial
 function moverCamara(dx, dz) {
   camX += dx;
   camZ += dz;
@@ -1001,7 +1099,15 @@ function moverCamara(dx, dz) {
   camera.lookAt(camX, 0, camZ - 100); // ajusta para que siga viendo al frente
 }
 
-document.getElementById("move-left").addEventListener("click", () => moverCamara(-10, 0));
-document.getElementById("move-right").addEventListener("click", () => moverCamara(10, 0));
-document.getElementById("move-up").addEventListener("click", () => moverCamara(0, -10));
-document.getElementById("move-down").addEventListener("click", () => moverCamara(0, 10));
+document
+  .getElementById("move-left")
+  .addEventListener("click", () => moverCamara(-10, 0));
+document
+  .getElementById("move-right")
+  .addEventListener("click", () => moverCamara(10, 0));
+document
+  .getElementById("move-up")
+  .addEventListener("click", () => moverCamara(0, -10));
+document
+  .getElementById("move-down")
+  .addEventListener("click", () => moverCamara(0, 10));

@@ -1,26 +1,29 @@
 :root {
   /* Estilos generales */
-  --accent-blue-light:    #22304b;   
-  --accent-blue-mid:      #182238;   
-  --accent-blue-dark:     #101829;  
-  --accent-blue-intense:  #0d294b;   
-  --accent-gradient: linear-gradient(135deg, #22304b 10%, #182238 55%, #101829 100%);
+  --accent-blue-light: #22304b;
+  --accent-blue-mid: #182238;
+  --accent-blue-dark: #101829;
+  --accent-blue-intense: #0d294b;
+  --accent-gradient: linear-gradient(
+    135deg,
+    #22304b 10%,
+    #182238 55%,
+    #101829 100%
+  );
   --accent-gradient-solid: linear-gradient(90deg, #22304b 20%, #182238 90%);
   --accent-gradient-135: linear-gradient(135deg, #22304b 10%, #5ea6ff 100%);
   --accent-start: #182238;
-  --accent-end:   #22304b;
-  --txt-light:    #ffffff;
-  --txt-muted:    #b7cafc;
-  --glass:        rgba(24, 36, 77, 0.18);
+  --accent-end: #22304b;
+  --txt-light: #ffffff;
+  --txt-muted: #b7cafc;
+  --glass: rgba(24, 36, 77, 0.18);
 }
-
-
 
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 }
 
 body {
@@ -118,7 +121,6 @@ body {
   display: none;
 }
 
-
 #sidebar .titulo-urbano {
   opacity: 0;
   transition: opacity 0.3s ease;
@@ -171,10 +173,9 @@ body {
 
 #sidebar:hover .traffic-slider {
   opacity: 1;
-  max-height: 200px; 
+  max-height: 200px;
   pointer-events: auto;
 }
-
 
 /* === MAIN CONTENT === */
 #main-content {
@@ -227,8 +228,10 @@ body {
   align-items: center;
 }
 
-#mic-button, #send-button, 
-#play-button, #stop-button, 
+#mic-button,
+#send-button,
+#play-button,
+#stop-button,
 #reload-button {
   background: var(--accent-gradient-solid);
   border: 1px solid var(--glass);
@@ -244,22 +247,28 @@ body {
   box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15);
 }
 
-#mic-button:hover, #send-button:hover, 
-#play-button:hover, #stop-button:hover, 
+#mic-button:hover,
+#send-button:hover,
+#play-button:hover,
+#stop-button:hover,
 #reload-button:hover {
   background: var(--accent-gradient);
   transform: translateY(-3px);
   box-shadow: 0 10px 18px rgba(0, 0, 0, 0.25);
 }
 
-#mic-button:active, #send-button:active, 
-#play-button:active, #stop-button:active, 
+#mic-button:active,
+#send-button:active,
+#play-button:active,
+#stop-button:active,
 #reload-button:active {
   transform: scale(0.95);
 }
 
-#mic-button img, #send-button img, 
-#play-button img, #stop-button img, 
+#mic-button img,
+#send-button img,
+#play-button img,
+#stop-button img,
 #reload-button img {
   width: 24px;
   height: 24px;
@@ -303,7 +312,7 @@ body {
   height: 60px !important;
 }
 
-@import url('https://fonts.googleapis.com/css?family=Roboto:700');
+@import url("https://fonts.googleapis.com/css?family=Roboto:700");
 
 .titulo-urbano {
   color: var(--txt-muted);
@@ -345,20 +354,35 @@ body {
 }
 
 .flip div:last-child div {
-  background: #DC143C;
+  background: #dc143c;
 }
 
 @keyframes show {
-  0% { margin-top: -180px; }
-  5% { margin-top: -120px; }
-  33% { margin-top: -120px; }
-  38% { margin-top: -60px; }
-  66% { margin-top: -60px; }
-  71% { margin-top: 0px; }
-  99.99% { margin-top: 0px; }
-  100% { margin-top: -180px; }
+  0% {
+    margin-top: -180px;
+  }
+  5% {
+    margin-top: -120px;
+  }
+  33% {
+    margin-top: -120px;
+  }
+  38% {
+    margin-top: -60px;
+  }
+  66% {
+    margin-top: -60px;
+  }
+  71% {
+    margin-top: 0px;
+  }
+  99.99% {
+    margin-top: 0px;
+  }
+  100% {
+    margin-top: -180px;
+  }
 }
-
 
 /* === ANIMACIÓN DEL CAMIÓN  === */
 .loop-wrapper {
@@ -376,13 +400,9 @@ body {
   bottom: -20px;
   width: 2px;
   height: 2px;
-  box-shadow: 
-    0 0 0 50px #1e2e4a,
-    60px 50px 0 70px #1e2e4a,
-    90px 90px 0 50px #1e2e4a,
-    250px 250px 0 50px #1e2e4a,
-    290px 320px 0 50px #1e2e4a,
-    320px 400px 0 50px #1e2e4a;
+  box-shadow: 0 0 0 50px #1e2e4a, 60px 50px 0 70px #1e2e4a,
+    90px 90px 0 50px #1e2e4a, 250px 250px 0 50px #1e2e4a,
+    290px 320px 0 50px #1e2e4a, 320px 400px 0 50px #1e2e4a;
   transform: rotate(130deg);
   animation: mtn 20s linear infinite;
 }
@@ -394,13 +414,8 @@ body {
   width: 400px;
   border-radius: 50%;
   height: 20px;
-  box-shadow: 
-    0 0 0 50px #2c4063,
-    -20px 0 0 20px #2c4063,
-    -90px 0 0 50px #2c4063,
-    250px 0 0 50px #2c4063,
-    290px 0 0 50px #2c4063,
-    620px 0 0 50px #2c4063;
+  box-shadow: 0 0 0 50px #2c4063, -20px 0 0 20px #2c4063, -90px 0 0 50px #2c4063,
+    250px 0 0 50px #2c4063, 290px 0 0 50px #2c4063, 620px 0 0 50px #2c4063;
   animation: hill 4s 2s linear infinite;
 }
 
@@ -411,7 +426,8 @@ body {
   height: 100px;
   width: 35px;
   bottom: 0;
-  background: url(https://s3-us-west-2.amazonaws.com/s.cdpn.io/130015/tree.svg) no-repeat;
+  background: url(https://s3-us-west-2.amazonaws.com/s.cdpn.io/130015/tree.svg)
+    no-repeat;
 }
 
 .rock {
@@ -460,60 +476,105 @@ body {
   content: " ";
   position: absolute;
   width: 25px;
-  box-shadow:
-    -30px 28px 0 1.5px #fff,
-    -35px 18px 0 1.5px #fff;
+  box-shadow: -30px 28px 0 1.5px #fff, -35px 18px 0 1.5px #fff;
 }
 
 .wheels {
-  background: url(https://s3-us-west-2.amazonaws.com/s.cdpn.io/130015/wheels.svg) no-repeat;
+  background: url(https://s3-us-west-2.amazonaws.com/s.cdpn.io/130015/wheels.svg)
+    no-repeat;
   height: 15px;
   margin-bottom: 0;
 }
 
 /* === ANIMACIONES === */
-.tree  { animation: tree 3s 0.000s linear infinite; }
-.tree:nth-child(2)  { animation: tree2 2s 0.150s linear infinite; }
-.tree:nth-child(3)  { animation: tree3 8s 0.050s linear infinite; }
-.rock  { animation: rock 4s -0.530s linear infinite; }
-.truck  { animation: truck 4s 0.080s ease infinite; }
-.wheels  { animation: truck 4s 0.001s ease infinite; }
-.truck:before { animation: wind 1.5s 0.000s ease infinite; }
+.tree {
+  animation: tree 3s 0s linear infinite;
+}
+.tree:nth-child(2) {
+  animation: tree2 2s 0.15s linear infinite;
+}
+.tree:nth-child(3) {
+  animation: tree3 8s 0.05s linear infinite;
+}
+.rock {
+  animation: rock 4s -0.53s linear infinite;
+}
+.truck {
+  animation: truck 4s 0.08s ease infinite;
+}
+.wheels {
+  animation: truck 4s 0.001s ease infinite;
+}
+.truck:before {
+  animation: wind 1.5s 0s ease infinite;
+}
 
 @keyframes tree {
-  0%   { transform: translate(1350px); }
-  100% { transform: translate(-50px); }
+  0% {
+    transform: translate(1350px);
+  }
+  100% {
+    transform: translate(-50px);
+  }
 }
 
 @keyframes tree2 {
-  0%   { transform: translate(650px); }
-  100% { transform: translate(-50px); }
+  0% {
+    transform: translate(650px);
+  }
+  100% {
+    transform: translate(-50px);
+  }
 }
 
 @keyframes tree3 {
-  0%   { transform: translate(2750px); }
-  100% { transform: translate(-50px); }
+  0% {
+    transform: translate(2750px);
+  }
+  100% {
+    transform: translate(-50px);
+  }
 }
 
 @keyframes rock {
-  0%   { right: -200px; }
-  100% { right: 2000px; }
+  0% {
+    right: -200px;
+  }
+  100% {
+    right: 2000px;
+  }
 }
 
 @keyframes truck {
-  0% {}
-  6% { transform: translateY(0px); }
-  7% { transform: translateY(-6px); }
-  9% { transform: translateY(0px); }
-  10% { transform: translateY(-1px); }
-  11% { transform: translateY(0px); }
-  100% {}
+  0% {
+  }
+  6% {
+    transform: translateY(0px);
+  }
+  7% {
+    transform: translateY(-6px);
+  }
+  9% {
+    transform: translateY(0px);
+  }
+  10% {
+    transform: translateY(-1px);
+  }
+  11% {
+    transform: translateY(0px);
+  }
+  100% {
+  }
 }
 
 @keyframes wind {
-  0% {}
-  50% { transform: translateY(3px); }
-  100% {}
+  0% {
+  }
+  50% {
+    transform: translateY(3px);
+  }
+  100% {
+  }
 }
 
 @keyframes mtn {
@@ -537,7 +598,7 @@ body {
   background: transparent;
 }
 
-.swanky_wrapper input[type='checkbox'] {
+.swanky_wrapper input[type="checkbox"] {
   display: none;
 }
 
@@ -550,7 +611,7 @@ body {
   font-weight: bold;
   display: block;
   position: relative;
-  transition: text-indent .15s, background 0.3s;
+  transition: text-indent 0.15s, background 0.3s;
   cursor: pointer;
   background: transparent;
 }
@@ -574,7 +635,7 @@ body {
   background: var(--accent-end);
   bottom: 0;
   left: 0;
-  transition: width .15s;
+  transition: width 0.15s;
 }
 
 .swanky_wrapper label:hover .bar {
@@ -594,7 +655,7 @@ body {
 
 .swanky_wrapper__content {
   display: none;
-  background: linear-gradient(to right,  #223c67 10%, #173a78 55%, #0a1e38 100%);
+  background: linear-gradient(to right, #223c67 10%, #173a78 55%, #0a1e38 100%);
   border-radius: 0 0 8px 8px;
 }
 
@@ -606,7 +667,7 @@ body {
 .swanky_wrapper__content li {
   padding: 12px 20px;
   color: var(--txt-light);
-  background: linear-gradient(to right,  #223c67 10%, #173a78 55%, #0a1e38 100%);
+  background: linear-gradient(to right, #223c67 10%, #173a78 55%, #0a1e38 100%);
   transition: background 0.3s, text-indent 0.3s;
 }
 
@@ -615,11 +676,11 @@ body {
   text-indent: 10px;
 }
 
-input[type='checkbox']:checked + label .swanky_wrapper__content {
+input[type="checkbox"]:checked + label .swanky_wrapper__content {
   display: block;
 }
 
-input[type='checkbox']:checked + label .lil_arrow {
+input[type="checkbox"]:checked + label .lil_arrow {
   transform: rotate(135deg);
   border-top: 2px solid var(--accent-end);
   border-right: 2px solid var(--accent-end);
@@ -628,23 +689,23 @@ input[type='checkbox']:checked + label .lil_arrow {
 /* === SEMÁFORO === */
 
 #main-content {
-    position: relative;
+  position: relative;
 }
 .semaforo-overlay {
-    position: fixed;
-    top: 540px;   
-    left: 1350px; 
-    z-index: 2100;
-    pointer-events: none;
+  position: fixed;
+  top: 540px;
+  left: 1350px;
+  z-index: 2100;
+  pointer-events: none;
 }
 .semaforo-overlay .semaforo,
 .semaforo-overlay .poste-semaforo {
-    pointer-events: auto;
+  pointer-events: auto;
 }
 
 .semaforo {
-  width: 65px;      
-  height: 140px;   
+  width: 65px;
+  height: 140px;
   border-radius: 24px;
   background-color: #2c3e50;
   padding: 7px 0;
@@ -655,56 +716,56 @@ input[type='checkbox']:checked + label .lil_arrow {
 }
 
 .luces-circulo {
-  width: 28px;      
-  height: 28px;     
-  margin: 7px 0;    
+  width: 28px;
+  height: 28px;
+  margin: 7px 0;
   border-radius: 50%;
-  background-color: rgba(0,0,0,0.3);
+  background-color: rgba(0, 0, 0, 0.3);
   position: relative;
   border: 2.5px solid #181f25;
 }
 
 .luces-circulo::after {
-  content: '';
+  content: "";
   position: absolute;
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  border-right: 3px solid rgba(255,255,255,0.5);
+  border-right: 3px solid rgba(255, 255, 255, 0.5);
   top: 3.5px;
   left: 3.5px;
 }
 
-.stick{
-    width: 8px;
-    height: 280px;
-    background-color: rgb(0, 0,0,0.5);
+.stick {
+  width: 8px;
+  height: 280px;
+  background-color: rgb(0, 0, 0, 0.5);
 }
 
-.red{
-    background-color: #c0392b;
-    box-shadow: 0 0 10px 1px #c0392b;
+.red {
+  background-color: #c0392b;
+  box-shadow: 0 0 10px 1px #c0392b;
 }
-.yellow{
-    background-color: #f1c40f;
-    box-shadow: 0 0 10px 1px #f1c40f;
+.yellow {
+  background-color: #f1c40f;
+  box-shadow: 0 0 10px 1px #f1c40f;
 }
-.green{
-    background-color: #2ecc71;
-    box-shadow: 0 0 10px 1px #2ecc71;
+.green {
+  background-color: #2ecc71;
+  box-shadow: 0 0 10px 1px #2ecc71;
 }
 .semaforo-poste-container {
   display: flex;
   flex-direction: column;
-  align-items: center; 
+  align-items: center;
 }
 
 /* === POSTE DEL SEMÁFORO === */
 .poste {
-  width: 9px;              
-  height: 180px;           
+  width: 9px;
+  height: 180px;
   background: #575757;
-  margin-top: 0px;         
+  margin-top: 0px;
   border-radius: 2px;
 }
 
@@ -743,10 +804,7 @@ input[type='checkbox']:checked + label .lil_arrow {
   display: block;
   margin: auto;
   pointer-events: none;
- 
 }
-
-
 
 /* slider de tráfico */
 
@@ -820,10 +878,10 @@ input[type='checkbox']:checked + label .lil_arrow {
 /* === Botones de movimiento de cámara === */
 .camera-move-controls {
   position: absolute;
-  bottom: 20px; 
+  bottom: 20px;
   right: 600px;
   display: flex;
-  flex-direction: row; 
+  flex-direction: row;
   gap: 8px;
   z-index: 200;
 }
