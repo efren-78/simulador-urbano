@@ -859,9 +859,9 @@ window.addEventListener("DOMContentLoaded", () => {
 // ----- CONTROL DE VISTAS ----- //
 function updateCamera() {
   switch (currentView) {
-    case "top": // Vista cenital
-      camera.position.set(0, 150, 0);
-      camera.lookAt(0, 0, 0);
+    case "top": // Vista cenital con zoom y movimiento
+      camera.position.set(camX, zoomLevel, camZ);
+      camera.lookAt(camX, 0, camZ - 100);
       break;
 
     case "street": // Vista nivel calle
@@ -871,7 +871,7 @@ function updateCamera() {
 
     case "follow": // Seguir auto
       if (cars && cars.length > 0) {
-        if (!followCar) followCar = cars[0]; // seguir el primero por defecto
+        if (!followCar) followCar = cars[0];
         const carPos = followCar.position;
         camera.position.set(carPos.x - 10, 8, carPos.z + 5);
         camera.lookAt(carPos.x, carPos.y, carPos.z);
@@ -884,6 +884,7 @@ function updateCamera() {
       break;
   }
 }
+
 
 // Para cambiar manualmente el auto que seguimos
 let followIndex = 0;
