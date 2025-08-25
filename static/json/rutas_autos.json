@@ -1,5 +1,5 @@
 {
-  "rutaA": ["SanFrancisco", "18-1", "Ig7", "Ig8", "Ig9", "ver"],
+  "rutaA": ["SanFrancisco", "18-1", "Ig7", "Ig8", "Ig9", "g10"],
   "rutaB": [
     "14-2",
     "Ig1",
@@ -12,25 +12,12 @@
     "Fran1",
     "F2",
     "F3",
-    "F4",
-    "F5",
-    "F6"
+    "F4"
   ],
-  "rutaC": ["Fran1", "F2", "F3", "F4", "F5", "F6", "22-1"],
+  "rutaC": ["Fran1", "F2", "F3", "F4", "F5", "F6"],
   "rutaD": ["Bou1", "Bou2", "Bou3", "Bou4", "Bou5", "Bou6", "panu"],
-  "rutaE": ["panu", "Bou2", "Bou3", "Bou4", "Bou5", "Bou6"],
-  "rutaF": ["Ig1", "Ig2", "Ig3", "Ig4", "Ig5", "Ig6", "balsa"],
-  "rutaG": [
-    "SanFrancisco",
-    "18-1",
-    "Ig7",
-    "Ig8",
-    "Ig9",
-    "g10",
-    "Ig11",
-    "Ig12",
-    "22-1"
-  ],
+  "rutaF": ["Ig1", "Ig2", "Ig3", "Ig4", "Ig5", "Ig6"],
+  "rutaG": ["SanFrancisco", "18-1", "Ig7", "Ig8", "Ig9", "g10", "Ig11", "Ig12"],
   "rutaH": [
     "14-2",
     "Ig1",
