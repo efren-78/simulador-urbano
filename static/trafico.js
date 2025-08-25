@@ -20,13 +20,13 @@ const bloqueoMeshes = [];
 //Carpeta /json
 async function cargarCalles() {
   try {
-    const response = await fetch('json/rutas.json');
+    const response = await fetch("json/rutas.json");
     if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
     calles = await response.json();
-    console.log('Calles cargadas:', calles);
+    console.log("Calles cargadas:", calles);
     return true;
   } catch (error) {
-    console.error('Error cargando calles:', error);
+    console.error("Error cargando calles:", error);
     return false;
   }
 }
@@ -34,13 +34,13 @@ async function cargarCalles() {
 //Carpeta /json
 async function cargarRutasAutos() {
   try {
-    const response = await fetch('json/rutas_autos.json');
+    const response = await fetch("json/rutas_autos.json");
     if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
     rutasAutos = await response.json();
-    console.log('Rutas de autos cargadas:', rutasAutos);
+    console.log("Rutas de autos cargadas:", rutasAutos);
     return true;
   } catch (error) {
-    console.error('Error cargando rutas de autos:', error);
+    console.error("Error cargando rutas de autos:", error);
     return false;
   }
 }
@@ -94,8 +94,6 @@ function crearEscuela(posicion = { x: 0, z: 0 }, escala = 1) {
   scene.add(grupo);
 }
 
-
-
 // ----- CREACIÓN DE ELEMENTOS -----
 //Esta funcion ya no se usa a menos que se quiera una calle fija
 /*function crearCalleLarga(width, length, rotationY = 0, position = { x: 0, z: 0 }) {
@@ -114,7 +112,7 @@ function crearSemaforo(position, initialState = "red") {
   const colores = {
     red: 0xff0000,
     yellow: 0xffff00,
-    green: 0x00ff00
+    green: 0x00ff00,
   };
 
   const grupo = new THREE.Group();
@@ -142,7 +140,7 @@ function crearSemaforo(position, initialState = "red") {
       new THREE.SphereGeometry(0.3, 16, 16),
       new THREE.MeshStandardMaterial({
         color: colores[estado],
-        emissive: initialState === estado ? colores[estado] : 0x000000
+        emissive: initialState === estado ? colores[estado] : 0x000000,
       })
     );
     luz.position.set(0, 6.9 - i * 0.9, 0.6); // Posiciones verticales dentro de la caja
@@ -157,8 +155,6 @@ function crearSemaforo(position, initialState = "red") {
   scene.add(grupo);
   semaforos.push(grupo);
 }
-
-
 
 function createCar(color) {
   const carGroup = new THREE.Group();
@@ -187,32 +183,35 @@ function createCar(color) {
     { x: 1.3, y: 0.4, z: 1.2 },
     { x: 1.3, y: 0.4, z: -1.2 },
     { x: -1.3, y: 0.4, z: 1.2 },
-    { x: -1.3, y: 0.4, z: -1.2 }
+    { x: -1.3, y: 0.4, z: -1.2 },
   ];
 
-  positions.forEach(pos => {
+  positions.forEach((pos) => {
     const wheel = new THREE.Mesh(wheelGeometry, wheelMaterial);
     wheel.position.set(pos.x, pos.y, pos.z);
     wheel.rotation.z = Math.PI / 2;
     wheel.castShadow = true;
     carGroup.add(wheel);
   });
-carGroup.scale.set(2, 2, 2); // Escala el auto 1.5 veces más grande
+  carGroup.scale.set(2, 2, 2); // Escala el auto 1.5 veces más grande
 
   return {
-    group: carGroup
+    group: carGroup,
   };
 }
 
 function crearAutos(cantidad, velocidadBase) {
   const rutasKeys = Object.keys(rutasAutos);
-  const colores = [0xFF0000, 0x0000FF, 0x00FF00, 0xFFFF00, 0xFF00FF, 0x00FFFF, 0xFFA500, 0x800080];
+  const colores = [
+    0xff0000, 0x0000ff, 0x00ff00, 0xffff00, 0xff00ff, 0x00ffff, 0xffa500,
+    0x800080,
+  ];
 
   for (let i = 0; i < cantidad; i++) {
     const rutaSeleccionada = rutasKeys[i % rutasKeys.length];
     const callesDeRuta = rutasAutos[rutaSeleccionada]
-      .map(c => calles[c])
-      .filter(calle => calle); // Asegura que existan las calles
+      .map((c) => calles[c])
+      .filter((calle) => calle); // Asegura que existan las calles
     const puntos = callesDeRuta.flat();
     if (puntos.length < 2) continue;
 
@@ -223,7 +222,7 @@ function crearAutos(cantidad, velocidadBase) {
     auto.group.userData = {
       ruta: puntos,
       index: 0,
-      t: 0
+      t: 0,
     };
 
     cars.push(auto.group);
@@ -233,11 +232,14 @@ function crearAutos(cantidad, velocidadBase) {
   }
 }
 
-
 //Obstruccion en calles
 function crearBloqueo(scene, position, radio = 5) {
   const geometry = new THREE.CircleGeometry(radio, 32);
-  const material = new THREE.MeshBasicMaterial({ color: 0xffaa00, opacity: 0.5, transparent: true });
+  const material = new THREE.MeshBasicMaterial({
+    color: 0xffaa00,
+    opacity: 0.5,
+    transparent: true,
+  });
   const bloqueo = new THREE.Mesh(geometry, material);
   bloqueo.rotation.x = -Math.PI / 2;
   bloqueo.position.set(position.x, 0.01, position.z);
@@ -251,10 +253,10 @@ let mostrarNombresCalles = false;
 
 function dibujarCallesDesdeJSON() {
   // Eliminar las calles anteriores
-  callesMeshes.forEach(mesh => scene.remove(mesh));
+  callesMeshes.forEach((mesh) => scene.remove(mesh));
   callesMeshes.length = 0;
 
-  Object.keys(calles).forEach(calleKey => {
+  Object.keys(calles).forEach((calleKey) => {
     const puntos = calles[calleKey];
     if (puntos.length < 2) return;
 
@@ -274,7 +276,7 @@ function dibujarCallesDesdeJSON() {
     const geometryAmarilla = new THREE.PlaneGeometry(longitud, ancho);
     const materialAmarilla = new THREE.MeshBasicMaterial({
       color: 0xffff00,
-      side: THREE.DoubleSide
+      side: THREE.DoubleSide,
     });
 
     const meshAmarillo = new THREE.Mesh(geometryAmarilla, materialAmarilla);
@@ -292,7 +294,7 @@ function dibujarCallesDesdeJSON() {
     const geometryBorde = new THREE.PlaneGeometry(longitud, 3); // Borde delgado
     const materialBorde = new THREE.MeshBasicMaterial({
       color: 0x000000,
-      side: THREE.DoubleSide
+      side: THREE.DoubleSide,
     });
 
     // Borde derecho
@@ -311,54 +313,50 @@ function dibujarCallesDesdeJSON() {
     scene.add(bordeIzquierdo);
     callesMeshes.push(bordeIzquierdo);
 
-if (mostrarNombresCalles) {
-  const canvas = document.createElement("canvas");
-  canvas.width = 512;
-  canvas.height = 128;
-  const context = canvas.getContext("2d");
+    if (mostrarNombresCalles) {
+      const canvas = document.createElement("canvas");
+      canvas.width = 512;
+      canvas.height = 128;
+      const context = canvas.getContext("2d");
 
-  // Fondo transparente (NO pintamos fondo)
-context.clearRect(0, 0, canvas.width, canvas.height);
+      // Fondo transparente (NO pintamos fondo)
+      context.clearRect(0, 0, canvas.width, canvas.height);
 
-context.font = "bold 100px 'Times New Roman', serif";  // bold para más gordito
-context.textAlign = "center";
-context.textBaseline = "middle";
+      context.font = "bold 100px 'Times New Roman', serif"; // bold para más gordito
+      context.textAlign = "center";
+      context.textBaseline = "middle";
 
-// Primero dibujas el contorno (línea negra)
-context.lineWidth = 8;                 // Grosor del contorno, ajusta al gusto
-context.strokeStyle = "black";         // Color del contorno
-context.strokeText(calleKey, canvas.width / 2, canvas.height / 2);
+      // Primero dibujas el contorno (línea negra)
+      context.lineWidth = 8; // Grosor del contorno, ajusta al gusto
+      context.strokeStyle = "black"; // Color del contorno
+      context.strokeText(calleKey, canvas.width / 2, canvas.height / 2);
 
-// Luego rellenas el texto en blanco
-context.fillStyle = "white";
-context.fillText(calleKey, canvas.width / 2, canvas.height / 2);
+      // Luego rellenas el texto en blanco
+      context.fillStyle = "white";
+      context.fillText(calleKey, canvas.width / 2, canvas.height / 2);
 
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.needsUpdate = true;
+      texture.minFilter = THREE.LinearFilter;
 
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.needsUpdate = true;
-  texture.minFilter = THREE.LinearFilter;
+      const materialText = new THREE.SpriteMaterial({
+        map: texture,
+        transparent: true,
+      });
+      const sprite = new THREE.Sprite(materialText);
+      sprite.scale.set(20, 5, 1); // Más grande y elegante
 
-  const materialText = new THREE.SpriteMaterial({ map: texture, transparent: true });
-  const sprite = new THREE.Sprite(materialText);
-  sprite.scale.set(20, 5, 1); // Más grande y elegante
+      // Posición: un poco arriba de la calle
+      sprite.position.set(posX, 2.5, posZ);
 
-  // Posición: un poco arriba de la calle
-  sprite.position.set(posX, 2.5, posZ);
+      // Rotar si quieres que el texto siga la dirección de la calle:
+      sprite.rotation.z = -angulo;
 
-  // Rotar si quieres que el texto siga la dirección de la calle:
-  sprite.rotation.z = -angulo;
-
-  scene.add(sprite);
-  callesMeshes.push(sprite);
-}
-
-
-
+      scene.add(sprite);
+      callesMeshes.push(sprite);
+    }
   });
 }
-
-
-
 
 // ----- Animacion -----
 function animate() {
@@ -384,22 +382,22 @@ function actualizarSemaforos() {
   const colores = {
     red: 0xff0000,
     yellow: 0xffff00,
-    green: 0x00ff00
+    green: 0x00ff00,
   };
 
-  semaforos.forEach(semaforo => {
+  semaforos.forEach((semaforo) => {
     const estados = ["red", "yellow", "green"];
-    estados.forEach(color => {
+    estados.forEach((color) => {
       const luz = semaforo.getObjectByName(color);
       if (luz && luz.material && luz.material.emissive) {
-        luz.material.emissive.setHex(color === state ? colores[color] : 0x000000);
+        luz.material.emissive.setHex(
+          color === state ? colores[color] : 0x000000
+        );
       }
     });
     semaforo.userData.state = state;
   });
 }
-
-
 
 function moverAutos(delta) {
   cars.forEach((car, i) => {
@@ -409,14 +407,16 @@ function moverAutos(delta) {
     let detener = false;
 
     // Verificar semáforos
-    semaforos.forEach(semaforo => {
+    semaforos.forEach((semaforo) => {
       const dist = car.position.distanceTo(semaforo.position);
       if (dist < 3 && semaforo.userData.state === "red") detener = true;
     });
 
     // Verificar bloqueos
-    bloqueos.forEach(b => {
-      const dist = car.position.distanceTo(new THREE.Vector3(b.position.x, 0, b.position.z));
+    bloqueos.forEach((b) => {
+      const dist = car.position.distanceTo(
+        new THREE.Vector3(b.position.x, 0, b.position.z)
+      );
       if (dist < b.radio) detener = true;
     });
 
@@ -439,7 +439,6 @@ function moverAutos(delta) {
       car.userData.waitStart = null;
     }
 
-
     if (!detener) {
       let p1 = puntos[index];
       let p2 = puntos[index + 1];
@@ -461,15 +460,18 @@ function moverAutos(delta) {
       car.rotation.y = -angle;
     }
   });
-
 }
 
 function calcularVelocidadBase(nivel) {
   switch (nivel.toLowerCase()) {
-    case "fluido": return 0.001;
-    case "moderado": return 0.0006;
-    case "congestionado": return 0.0003;
-    default: return 0.001;
+    case "fluido":
+      return 0.001;
+    case "moderado":
+      return 0.0006;
+    case "congestionado":
+      return 0.0003;
+    default:
+      return 0.001;
   }
 }
 
@@ -500,10 +502,11 @@ function reloadSim() {
 
 //----- Operaciones extra -----
 function rutaTieneBloqueo(ruta) {
-  return ruta.some(punto => {
-    return bloqueos.some(b => {
-      const dist = new THREE.Vector3(punto.x, 0, punto.y)
-        .distanceTo(new THREE.Vector3(b.position.x, 0, b.position.z));
+  return ruta.some((punto) => {
+    return bloqueos.some((b) => {
+      const dist = new THREE.Vector3(punto.x, 0, punto.y).distanceTo(
+        new THREE.Vector3(b.position.x, 0, b.position.z)
+      );
       return dist < b.radio;
     });
   });
@@ -511,14 +514,15 @@ function rutaTieneBloqueo(ruta) {
 
 function cambiarRutaAuto(car) {
   const rutasKeys = Object.keys(rutasAutos);
-  const rutasDisponibles = rutasKeys.filter(key => {
-    const callesDeRuta = rutasAutos[key].map(c => calles[c]).flat();
+  const rutasDisponibles = rutasKeys.filter((key) => {
+    const callesDeRuta = rutasAutos[key].map((c) => calles[c]).flat();
     return !rutaTieneBloqueo(callesDeRuta);
   });
 
   if (rutasDisponibles.length > 0) {
-    const nuevaRutaKey = rutasDisponibles[Math.floor(Math.random() * rutasDisponibles.length)];
-    const nuevaRuta = rutasAutos[nuevaRutaKey].map(c => calles[c]).flat();
+    const nuevaRutaKey =
+      rutasDisponibles[Math.floor(Math.random() * rutasDisponibles.length)];
+    const nuevaRuta = rutasAutos[nuevaRutaKey].map((c) => calles[c]).flat();
     car.userData.ruta = nuevaRuta;
     car.userData.index = 0;
     car.userData.t = 0;
@@ -537,7 +541,7 @@ async function enviarPrompt() {
     const response = await fetch("http://localhost:8000/nlp", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prompt: inputValue, max_tokens: 150 })
+      body: JSON.stringify({ prompt: inputValue, max_tokens: 150 }),
     });
     const data = await response.json();
     console.log("Respuesta backend NLP:", data);
@@ -556,51 +560,50 @@ async function init() {
   await cargarCalles();
   await cargarRutasAutos();
 
-
   scene = new THREE.Scene();
-
 
   const loader = new THREE.TextureLoader();
   loader.load(
-    'imagenes/cielo4.png',
+    "imagenes/cielo4.png",
     function (texture) {
-      console.log('✅ Imagen cargada correctamente');
+      console.log("✅ Imagen cargada correctamente");
       scene.background = texture;
     },
     undefined,
     function (err) {
-      console.error('❌ Error cargando la imagen', err);
+      console.error("❌ Error cargando la imagen", err);
     }
   );
 
-
-
   const textureLoader = new THREE.TextureLoader();
-  const groundTexture = textureLoader.load('imagenes/pasto.jpg');
+  const groundTexture = textureLoader.load("imagenes/pasto.jpg");
 
   groundTexture.wrapS = THREE.RepeatWrapping;
   groundTexture.wrapT = THREE.RepeatWrapping;
   groundTexture.repeat.set(10, 10); // Repetir la textura en el suelo
 
   const groundMaterial = new THREE.MeshStandardMaterial({
-  map: groundTexture
-});
+    map: groundTexture,
+  });
 
-const ground = new THREE.Mesh(
-  new THREE.PlaneGeometry(200, 200),
-  groundMaterial
-);
-ground.rotation.x = -Math.PI / 2;
-scene.add(ground);
-ground.userData.type = "ground";
-
-
+  const ground = new THREE.Mesh(
+    new THREE.PlaneGeometry(200, 200),
+    groundMaterial
+  );
+  ground.rotation.x = -Math.PI / 2;
+  scene.add(ground);
+  ground.userData.type = "ground";
 
   const canvas = document.getElementById("mapaCanvas");
   renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
 
-  camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+  camera = new THREE.PerspectiveCamera(
+    75,
+    window.innerWidth / window.innerHeight,
+    0.1,
+    1000
+  );
   camera.position.set(0, 100, 100);
   camera.lookAt(0, 0, 0);
 
@@ -609,12 +612,10 @@ ground.userData.type = "ground";
   scene.add(light);
 
   dibujarCallesDesdeJSON();
-  
 
   crearSemaforo({ x: -92, z: 0 }, "green");
   crearSemaforo({ x: -5, z: -82 }, "red");
   crearEscuela({ x: -40, z: -40 });
-
 
   const numCars = 5; // Lo ajusta backend después
   const trafico = "moderado";
@@ -623,29 +624,36 @@ ground.userData.type = "ground";
   renderer.render(scene, camera);
 }
 
-window.addEventListener('DOMContentLoaded', init);
+window.addEventListener("DOMContentLoaded", init);
 
-window.addEventListener('DOMContentLoaded', () => {
+window.addEventListener("DOMContentLoaded", () => {
   const btnToggleNombres = document.getElementById("btnToggleNombres");
 
   btnToggleNombres.addEventListener("click", () => {
     mostrarNombresCalles = !mostrarNombresCalles;
     const spanTexto = document.getElementById("btnTexto");
-    spanTexto.textContent = mostrarNombresCalles ? "Ocultar nombre de calles" : "Mostrar nombre de calles";
+    spanTexto.textContent = mostrarNombresCalles
+      ? "Ocultar nombre de calles"
+      : "Mostrar nombre de calles";
     dibujarCallesDesdeJSON();
   });
 });
 
-
 // ----- Eventos -----
 document.getElementById("play-button").addEventListener("click", () => {
-  fetch("http://localhost:8000/start").then(res => res.json()).then(() => playSim());
+  fetch("http://localhost:8000/start")
+    .then((res) => res.json())
+    .then(() => playSim());
 });
 document.getElementById("stop-button").addEventListener("click", () => {
-  fetch("http://localhost:8000/stop").then(res => res.json()).then(() => stopSim());
+  fetch("http://localhost:8000/stop")
+    .then((res) => res.json())
+    .then(() => stopSim());
 });
 document.getElementById("reload-button").addEventListener("click", () => {
-  fetch("http://localhost:8000/reload").then(res => res.json()).then(() => reloadSim());
+  fetch("http://localhost:8000/reload")
+    .then((res) => res.json())
+    .then(() => reloadSim());
 });
 
 document.getElementById("add-bloqueo").addEventListener("click", () => {
@@ -662,7 +670,7 @@ document.getElementById("remove-bloqueo").addEventListener("click", () => {
 
 document.getElementById("clear-bloqueos").addEventListener("click", () => {
   bloqueos.length = 0;
-  bloqueoMeshes.forEach(mesh => scene.remove(mesh));
+  bloqueoMeshes.forEach((mesh) => scene.remove(mesh));
   bloqueoMeshes.length = 0;
   console.log("Todos los bloqueos eliminados");
 });
@@ -676,25 +684,30 @@ document.getElementById("mapaCanvas").addEventListener("click", (event) => {
   mouse.x = ((event.clientX - rect.left) / canvas.clientWidth) * 2 - 1;
   mouse.y = -((event.clientY - rect.top) / canvas.clientHeight) * 2 + 1;
 
-
   raycaster.setFromCamera(mouse, camera);
   const intersects = raycaster.intersectObjects(scene.children, true);
 
   if (modoAgregarBloqueo) {
     // Agregar bloqueo solo en el suelo
-    const suelo = intersects.find(obj => obj.object.userData.type === "ground");
+    const suelo = intersects.find(
+      (obj) => obj.object.userData.type === "ground"
+    );
 
     if (suelo) {
       const punto = suelo.point;
       crearBloqueo(scene, { x: punto.x, z: punto.z }, 6);
-      console.log(`Bloqueo agregado en X=${punto.x.toFixed(2)}, Z=${punto.z.toFixed(2)}`);
+      console.log(
+        `Bloqueo agregado en X=${punto.x.toFixed(2)}, Z=${punto.z.toFixed(2)}`
+      );
     }
     modoAgregarBloqueo = false;
   }
 
   if (modoEliminarBloqueo) {
     // Eliminar si se clickea un bloqueo
-    const bloqueoHit = intersects.find(obj => bloqueoMeshes.includes(obj.object));
+    const bloqueoHit = intersects.find((obj) =>
+      bloqueoMeshes.includes(obj.object)
+    );
 
     if (bloqueoHit) {
       const index = bloqueoMeshes.indexOf(bloqueoHit.object);
@@ -709,14 +722,15 @@ document.getElementById("mapaCanvas").addEventListener("click", (event) => {
   }
 });
 
-
 //document.getElementById("button-main").addEventListener("click", enviarPrompt);
-document.getElementById("send-button").addEventListener("click", enviarPrompt)
+document.getElementById("send-button").addEventListener("click", enviarPrompt);
 
 // ----- Conexion websocket -----
 async function sincronizarEstado() {
   try {
-    const estado = await fetch("http://localhost:8000/estado").then(r => r.json());
+    const estado = await fetch("http://localhost:8000/estado").then((r) =>
+      r.json()
+    );
     console.log("Estado sincronizado:", estado);
 
     ajustarCantidadAutos(estado.numCars);
@@ -733,7 +747,9 @@ sincronizarEstado();
 async function configurarSiNecesario() {
   try {
     // Consultar estado actual
-    const estado = await fetch("http://localhost:8000/estado").then(r => r.json());
+    const estado = await fetch("http://localhost:8000/estado").then((r) =>
+      r.json()
+    );
     console.log("Estado actual:", estado);
 
     // Si ya hay simulación corriendo, NO mandar configuración
@@ -755,8 +771,8 @@ async function configurarSiNecesario() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           numCars: parseInt(numCars),
-          trafico: trafico
-        })
+          trafico: trafico,
+        }),
       });
       console.log("Configuración aplicada desde trafico.js");
     }
@@ -768,27 +784,36 @@ async function configurarSiNecesario() {
 configurarSiNecesario();
 
 const socket = new WebSocket("ws://localhost:8000/ws");
+
 socket.onmessage = ({ data }) => {
   const msg = JSON.parse(data);
   console.log("Mensaje WS:", msg);
 
   if (msg.numCars) ajustarCantidadAutos(msg.numCars);
   if (msg.trafico) ajustarTrafico(msg.trafico);
-  if (msg.accion === "start") playSim();
-  else if (msg.accion === "stop") stopSim();
-  else if (msg.accion === "reload") reloadSim();
+
+  if (msg.accion === "start") {
+    playSim();
+  } else if (msg.accion === "stop") {
+    stopSim();
+  } else if (msg.accion === "reload") {
+    reloadSim();
+  } else if (msg.accion === "bloquear" && msg.calle) {
+    bloquearCalle(msg.calle);
+  } else if (msg.accion === "desbloquear" && msg.calle) {
+    desbloquearCalle(msg.calle);
+  }
 };
 
 // Ajustar cantidad de autos
 function ajustarCantidadAutos(cantidad) {
-    console.log("⏫ Ajustando cantidad de autos a:", cantidad);
+  console.log("⏫ Ajustando cantidad de autos a:", cantidad);
 
-  cars.forEach(car => scene.remove(car));
+  cars.forEach((car) => scene.remove(car));
   cars.length = 0;
   carRoutes.length = 0;
   carSpeeds.length = 0;
   crearAutos(cantidad, calcularVelocidadBase("moderado"));
-  
 }
 
 // Ajustar tráfico
@@ -805,12 +830,16 @@ function setCameraZoom(newZoom) {
   camera.position.set(0, zoomLevel, zoomLevel);
   camera.lookAt(0, 0, 0);
 }
-document.getElementById("zoom-in").addEventListener("click", () => setCameraZoom(zoomLevel - 15));
-document.getElementById("zoom-out").addEventListener("click", () => setCameraZoom(zoomLevel + 20));
+document
+  .getElementById("zoom-in")
+  .addEventListener("click", () => setCameraZoom(zoomLevel - 15));
+document
+  .getElementById("zoom-out")
+  .addEventListener("click", () => setCameraZoom(zoomLevel + 20));
 
 // ----- Movimiento lateral de la cámara -----
 let camX = 0;
-let camZ = 100; // posición inicial 
+let camZ = 100; // posición inicial
 function moverCamara(dx, dz) {
   camX += dx;
   camZ += dz;
@@ -818,7 +847,61 @@ function moverCamara(dx, dz) {
   camera.lookAt(camX, 0, camZ - 100); // ajusta para que siga viendo al frente
 }
 
-document.getElementById("move-left").addEventListener("click", () => moverCamara(-10, 0));
-document.getElementById("move-right").addEventListener("click", () => moverCamara(10, 0));
-document.getElementById("move-up").addEventListener("click", () => moverCamara(0, -10));
-document.getElementById("move-down").addEventListener("click", () => moverCamara(0, 10));
+document
+  .getElementById("move-left")
+  .addEventListener("click", () => moverCamara(-10, 0));
+document
+  .getElementById("move-right")
+  .addEventListener("click", () => moverCamara(10, 0));
+document
+  .getElementById("move-up")
+  .addEventListener("click", () => moverCamara(0, -10));
+document
+  .getElementById("move-down")
+  .addEventListener("click", () => moverCamara(0, 10));
+
+function bloquearCalle(nombreCalle) {
+  if (!calles[nombreCalle]) {
+    console.warn(`Calle ${nombreCalle} no encontrada en JSON`);
+    return;
+  }
+
+  // Tomamos el punto medio de la calle
+  const puntos = calles[nombreCalle];
+  const centro = {
+    x: (puntos[0].x + puntos[puntos.length - 1].x) / 2,
+    z: (puntos[0].y + puntos[puntos.length - 1].y) / 2,
+  };
+
+  crearBloqueo(scene, centro, 6);
+  console.log(`Calle bloqueada vía NLP: ${nombreCalle}`);
+}
+
+function desbloquearCalle(nombreCalle) {
+  if (!calles[nombreCalle]) {
+    console.warn(`Calle ${nombreCalle} no encontrada en JSON`);
+    return;
+  }
+
+  const puntos = calles[nombreCalle];
+  const centro = {
+    x: (puntos[0].x + puntos[puntos.length - 1].x) / 2,
+    z: (puntos[0].y + puntos[puntos.length - 1].y) / 2,
+  };
+
+  for (let i = bloqueos.length - 1; i >= 0; i--) {
+    const dist = new THREE.Vector3(
+      bloqueos[i].position.x,
+      0,
+      bloqueos[i].position.z
+    ).distanceTo(new THREE.Vector3(centro.x, 0, centro.z));
+
+    if (dist < 10) {
+      // tolerancia
+      scene.remove(bloqueoMeshes[i]);
+      bloqueoMeshes.splice(i, 1);
+      bloqueos.splice(i, 1);
+      console.log(`Bloqueo eliminado en calle: ${nombreCalle}`);
+    }
+  }
+}

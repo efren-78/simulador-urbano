@@ -94,6 +94,7 @@ class PromptRequest(BaseModel):
     max_tokens: int = 150    #limite de tokens 
 
 #Endpoint que interpreta las instrucciones en lenguaje natural 
+
 @app.post("/nlp")
 async def responder(req: PromptRequest):
     params = generar_respuesta(req.prompt, req.max_tokens)
@@ -105,17 +106,12 @@ async def responder(req: PromptRequest):
     numCars = params.get("numCars", 10)
     trafico = params.get("trafico", "moderado")
     semaforo = params.get("semaforo", None)
+    calle = params.get("calle", None)   # 👈 nuevo
 
+    # Actualiza configuración general
     sim.set_config(numCars, trafico)
 
-    # Notificación global
-    await notificar_todos({
-        "accion": accion,
-        "numCars": numCars,
-        "trafico": trafico
-    })
-
-    # Ejecutar acción
+    # Ejecutar acciones principales
     if accion == "start" and not sim.running:
         t = threading.Thread(target=sim.iniciar_simulacion)
         t.start()
@@ -125,7 +121,7 @@ async def responder(req: PromptRequest):
         t = threading.Thread(target=sim.reiniciar_simulacion)
         t.start()
 
-    # Si hay cambio de semáforo → Notificar con formato correcto
+    # Semáforo
     global estado_semaforo
     if semaforo:
         estado_semaforo = semaforo
@@ -135,12 +131,32 @@ async def responder(req: PromptRequest):
         })
         logging.info(f"Semáforo cambiado a: {estado_semaforo}")
 
+    # 🚧 Manejo de bloqueos
+    if accion == "bloquear" and calle:
+        await notificar_todos({
+            "accion": "bloquear",
+            "calle": calle
+        })
+        logging.info(f"Bloqueo solicitado en calle: {calle}")
+        return {"status": f"Calle '{calle}' bloqueada", "calle": calle}
+
+    elif accion == "desbloquear" and calle:
+        await notificar_todos({
+            "accion": "desbloquear",
+            "calle": calle
+        })
+        logging.info(f"Bloqueo eliminado en calle: {calle}")
+        return {"status": f"Calle '{calle}' desbloqueada", "calle": calle}
+
+    # Respuesta final
     return {
         "status": f"Acción '{accion}' ejecutada",
         "numCars": sim.numCars,
         "trafico": sim.trafico,
-        "semaforo": estado_semaforo
+        "semaforo": estado_semaforo,
+        "calle": calle
     }
+
 
 
 
@@ -218,4 +234,4 @@ async def notificar_todos(data: dict):
 
 
 # Sirve archivos estáticos HTML + JS debe ir en /static)
-app.mount("/", StaticFiles(directory="static", html=True), name="static")
+app.mount("/", StaticFiles(directory="static", html=True), name="static") 
