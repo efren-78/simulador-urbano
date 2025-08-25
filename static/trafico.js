@@ -26,6 +26,12 @@ async function cargarCalles() {
     const response = await fetch("json/rutas.json");
     if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
     calles = await response.json();
+
+    // Inicializar estado de cada calle
+    for (const calle in calles) {
+      calles[calle].estado = "abierta"; // "abierta" o "cerrada"
+    }
+
     console.log("Calles cargadas:", calles);
     return true;
   } catch (error) {
@@ -33,6 +39,7 @@ async function cargarCalles() {
     return false;
   }
 }
+
 async function cargarRutasAutos() {
   try {
     const response = await fetch("json/rutas_autos.json");
@@ -202,6 +209,7 @@ function createCar(color) {
 }
 console.log("Datos de rutasAutos:", rutasAutos);
 console.log("Datos de calles:", calles);
+
 function crearAutos(cantidad, velocidadBase) {
   const rutasKeys = Object.keys(rutasAutos);
 
@@ -212,9 +220,11 @@ function crearAutos(cantidad, velocidadBase) {
 
   for (let i = 0; i < cantidad; i++) {
     const rutaSeleccionada = rutasKeys[i % rutasKeys.length];
+    // Cada punto ahora también guarda el nombre de su calle
     const callesDeRuta = rutasAutos[rutaSeleccionada]
-      .map((c) => calles[c])
-      .filter((calle) => calle); // Asegura que existan las calles
+      .map((c) => calles[c]?.map((p) => ({ ...p, nombre: c })))
+      .flat();
+
     const puntos = callesDeRuta.flat();
     if (puntos.length < 2) continue;
 
@@ -233,6 +243,48 @@ function crearAutos(cantidad, velocidadBase) {
     carSpeeds.push(velocidadBase + Math.random() * 0.02);
     scene.add(auto.group);
   }
+}
+
+// Conexiones entre calles
+const grafo = {
+  SanFrancisco: ["SanIgnacio", "InterFran"],
+  SanIgnacio: ["SanFrancisco", "SanAntonio", "SanBere"],
+  SanAntonio: ["SanIgnacio", "SanIsaias", "SanBere"],
+  SanIsaias: ["SanAntonio", "SanEfren"],
+  SanEfren: ["SanIsaias", "SanAura"],
+  SanBere: ["SanIgnacio", "SanAntonio"],
+  SanAura: ["SanBere", "SanEfren", "SanAriel"],
+  SanAriel: ["SanAura"],
+  InterFran: ["SanFrancisco"],
+};
+function actualizarVisualCalles() {
+  callesMeshes.forEach((mesh) => scene.remove(mesh));
+  callesMeshes.length = 0;
+  dibujarCallesDesdeJSON();
+}
+
+function encontrarRutaAlternativa(origen, destino, bloqueadas = []) {
+  const visitados = new Set();
+  const cola = [[origen]]; // rutas posibles, empezando por el origen
+
+  while (cola.length > 0) {
+    const ruta = cola.shift();
+    const nodo = ruta[ruta.length - 1];
+
+    if (nodo === destino) return ruta; // Encontramos una ruta válida
+
+    if (!visitados.has(nodo)) {
+      visitados.add(nodo);
+      const vecinos = grafo[nodo] || [];
+      vecinos.forEach((vecino) => {
+        if (!visitados.has(vecino) && !bloqueadas.includes(vecino)) {
+          cola.push([...ruta, vecino]);
+        }
+      });
+    }
+  }
+
+  return null; // No se encontró ruta
 }
 
 //Obstruccion en calles
@@ -269,7 +321,7 @@ function dibujarCallesDesdeJSON() {
     const dx = p2.x - p1.x;
     const dy = p2.y - p1.y;
     const longitud = Math.sqrt(dx * dx + dy * dy);
-    const ancho = 1;
+    const ancho = 20;
 
     const angulo = Math.atan2(dy, dx);
     const posX = (p1.x + p2.x) / 2;
@@ -278,7 +330,7 @@ function dibujarCallesDesdeJSON() {
     // Calle amarilla
     const geometryAmarilla = new THREE.PlaneGeometry(longitud, ancho);
     const materialAmarilla = new THREE.MeshBasicMaterial({
-      color: 0xffff00,
+      color: 0x000000,
       side: THREE.DoubleSide,
     });
 
@@ -294,9 +346,9 @@ function dibujarCallesDesdeJSON() {
     const offsetX = -Math.sin(angulo) * offset;
     const offsetZ = Math.cos(angulo) * offset;
 
-    const geometryBorde = new THREE.PlaneGeometry(longitud, 3); // Borde delgado
+    const geometryBorde = new THREE.PlaneGeometry(longitud, 1); // Borde delgado
     const materialBorde = new THREE.MeshBasicMaterial({
-      color: 0x000000,
+      color: 0xffff00,
       side: THREE.DoubleSide,
     });
 
@@ -330,7 +382,7 @@ function dibujarCallesDesdeJSON() {
       context.textBaseline = "middle";
 
       // Primero dibujas el contorno (línea negra)
-      context.lineWidth = 8; // Grosor del contorno, ajusta al gusto
+      context.lineWidth = 10; // Grosor del contorno, ajusta al gusto
       context.strokeStyle = "black"; // Color del contorno
       context.strokeText(calleKey, canvas.width / 2, canvas.height / 2);
 
@@ -360,7 +412,6 @@ function dibujarCallesDesdeJSON() {
     }
   });
 }
-
 // ----- Animacion -----
 function animate() {
   if (!running) return;
@@ -416,53 +467,28 @@ function moverAutos(delta) {
       const dist = car.position.distanceTo(semaforo.position);
       if (dist < 3 && semaforo.userData.state === "red") detener = true;
     });
-
-    // Verificar bloqueos
-    bloqueos.forEach((b) => {
-      const dist = car.position.distanceTo(
-        new THREE.Vector3(b.position.x, 0, b.position.z)
-      );
-      if (dist < b.radio) detener = true;
-    });
-
-    // Verificar si la ruta del auto tiene bloqueo
-    if (rutaTieneBloqueo(puntos)) {
+    const calleActual = puntos[index].nombre;
+    if (calles[calleActual]?.estado === "cerrada") {
       detener = true;
-
-      // Si no tiene temporizador, lo creamos
-      if (!car.userData.waitStart) {
-        car.userData.waitStart = performance.now();
-      } else {
-        const elapsed = (performance.now() - car.userData.waitStart) / 1000; // en segundos
-        if (elapsed >= 3) {
-          cambiarRutaAuto(car);
-          car.userData.waitStart = null; // reiniciamos temporizador
-        }
+      if (!car.userData.waitStart) car.userData.waitStart = performance.now();
+      else if ((performance.now() - car.userData.waitStart) / 1000 > 3) {
+        cambiarRutaAuto(car);
+        car.userData.waitStart = null;
       }
-    } else {
-      // Si ya no hay bloqueo, limpiamos el temporizador
-      car.userData.waitStart = null;
-    }
+    } else car.userData.waitStart = null;
 
     if (!detener) {
-      let p1 = puntos[index];
-      let p2 = puntos[index + 1];
-      if (!p2) {
-        car.userData.index = 0;
-        car.userData.t = 0;
-        p1 = puntos[0];
-        p2 = puntos[1];
-      }
+      let p1 = puntos[index],
+        p2 = puntos[index + 1] || puntos[0];
       car.userData.t += speed * delta * 60;
       if (car.userData.t >= 1) {
-        car.userData.index++;
+        car.userData.index = (car.userData.index + 1) % puntos.length;
         car.userData.t = 0;
       }
       const x = THREE.MathUtils.lerp(p1.x, p2.x, car.userData.t);
       const z = THREE.MathUtils.lerp(p1.y, p2.y, car.userData.t);
       car.position.set(x, 0.5, z);
-      const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
-      car.rotation.y = -angle;
+      car.rotation.y = -Math.atan2(p2.y - p1.y, p2.x - p1.x);
     }
   });
 }
@@ -518,23 +544,38 @@ function rutaTieneBloqueo(ruta) {
 }
 
 function cambiarRutaAuto(car) {
-  const rutasKeys = Object.keys(rutasAutos);
-  const rutasDisponibles = rutasKeys.filter((key) => {
-    const callesDeRuta = rutasAutos[key].map((c) => calles[c]).flat();
-    return !rutaTieneBloqueo(callesDeRuta);
-  });
+  const puntoActual = car.userData.ruta[car.userData.index];
+  const calleInicio = puntoActual.nombre;
+  const calleDestino = car.userData.ruta[car.userData.ruta.length - 1].nombre;
 
-  if (rutasDisponibles.length > 0) {
-    const nuevaRutaKey =
-      rutasDisponibles[Math.floor(Math.random() * rutasDisponibles.length)];
-    const nuevaRuta = rutasAutos[nuevaRutaKey].map((c) => calles[c]).flat();
-    car.userData.ruta = nuevaRuta;
-    car.userData.index = 0;
-    car.userData.t = 0;
-    console.log(`Auto reasignado a ruta: ${nuevaRutaKey}`);
-  } else {
-    console.warn("No hay rutas alternativas disponibles");
+  const caminoAlternativo = encontrarRutaAlternativa(
+    calleInicio,
+    calleDestino,
+    Object.keys(calles).filter((c) => calles[c].estado === "cerrada")
+  );
+  if (!caminoAlternativo || caminoAlternativo.length === 0) {
+    console.log("No hay ruta alternativa");
+    return;
   }
+
+  const nuevaRutaCoordenadas = caminoAlternativo
+    .map((c) => calles[c]?.map((p) => ({ ...p, nombre: c })))
+    .flat();
+  let indiceMasCercano = 0,
+    distanciaMin = Infinity;
+  nuevaRutaCoordenadas.forEach((p, i) => {
+    const dx = p.x - car.position.x,
+      dy = p.y - car.position.z;
+    const dist = dx * dx + dy * dy;
+    if (dist < distanciaMin) {
+      distanciaMin = dist;
+      indiceMasCercano = i;
+    }
+  });
+  car.userData.ruta = nuevaRutaCoordenadas;
+  car.userData.index = indiceMasCercano;
+  car.userData.t = 0;
+  console.log("Ruta cambiada a:", caminoAlternativo);
 }
 
 // -----Procesamiento de prompteo-----
@@ -909,48 +950,27 @@ document
   .getElementById("move-down")
   .addEventListener("click", () => moverCamara(0, 10));
 
+// ---------------------- BLOQUEO / DESBLOQUEO ----------------------
 function bloquearCalle(nombreCalle) {
-  if (!calles[nombreCalle]) {
-    console.warn(`Calle ${nombreCalle} no encontrada en JSON`);
-    return;
+  if (calles[nombreCalle]) {
+    calles[nombreCalle].estado = "cerrada";
+    actualizarVisualCalles();
+    console.log("Calle bloqueada:", nombreCalle);
   }
-
-  // Tomamos el punto medio de la calle
-  const puntos = calles[nombreCalle];
-  const centro = {
-    x: (puntos[0].x + puntos[puntos.length - 1].x) / 2,
-    z: (puntos[0].y + puntos[puntos.length - 1].y) / 2,
-  };
-
-  crearBloqueo(scene, centro, 6);
-  console.log(`Calle bloqueada vía NLP: ${nombreCalle}`);
 }
-
 function desbloquearCalle(nombreCalle) {
-  if (!calles[nombreCalle]) {
-    console.warn(`Calle ${nombreCalle} no encontrada en JSON`);
-    return;
+  if (calles[nombreCalle]) {
+    calles[nombreCalle].estado = "abierta";
+    actualizarVisualCalles();
+    console.log("Calle desbloqueada:", nombreCalle);
   }
-
-  const puntos = calles[nombreCalle];
-  const centro = {
-    x: (puntos[0].x + puntos[puntos.length - 1].x) / 2,
-    z: (puntos[0].y + puntos[puntos.length - 1].y) / 2,
-  };
-
-  for (let i = bloqueos.length - 1; i >= 0; i--) {
-    const dist = new THREE.Vector3(
-      bloqueos[i].position.x,
-      0,
-      bloqueos[i].position.z
-    ).distanceTo(new THREE.Vector3(centro.x, 0, centro.z));
-
-    if (dist < 10) {
-      // tolerancia
-      scene.remove(bloqueoMeshes[i]);
-      bloqueoMeshes.splice(i, 1);
-      bloqueos.splice(i, 1);
-      console.log(`Bloqueo eliminado en calle: ${nombreCalle}`);
-    }
-  }
+}
+function actualizarVisualCalles() {
+  callesMeshes.forEach((mesh) => {
+    const nombre = mesh.userData.nombre;
+    if (!nombre) return;
+    mesh.material.color.setHex(
+      calles[nombre].estado === "cerrada" ? 0xff0000 : 0x000000
+    );
+  });
 }
