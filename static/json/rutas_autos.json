@@ -1,12 +1,50 @@
 {
   "rutaA": ["SanFrancisco", "18-1", "Ig7", "Ig8", "Ig9", "ver"],
-  "rutaB": ["14-2", "Ig1", "Ig2", "Ig3", "Ig4", "Ig5", "Ig6", "18-3", "Fran1", "F2", "F3", "F4", "F5", "F6"],
+  "rutaB": [
+    "14-2",
+    "Ig1",
+    "Ig2",
+    "Ig3",
+    "Ig4",
+    "Ig5",
+    "Ig6",
+    "18-3",
+    "Fran1",
+    "F2",
+    "F3",
+    "F4",
+    "F5",
+    "F6"
+  ],
   "rutaC": ["Fran1", "F2", "F3", "F4", "F5", "F6", "22-1"],
   "rutaD": ["Bou1", "Bou2", "Bou3", "Bou4", "Bou5", "Bou6", "panu"],
   "rutaE": ["panu", "Bou2", "Bou3", "Bou4", "Bou5", "Bou6"],
   "rutaF": ["Ig1", "Ig2", "Ig3", "Ig4", "Ig5", "Ig6", "balsa"],
-  "rutaG": ["SanFrancisco", "18-1", "Ig7", "Ig8", "Ig9", "g10", "Ig11", "Ig12", "22-1"],
-  "rutaH": ["14-2", "Ig1", "Ig2", "Ig3", "Ig4", "Ig5", "Ig6", "18-3", "Fran1", "F2", "F3", "F4"],
+  "rutaG": [
+    "SanFrancisco",
+    "18-1",
+    "Ig7",
+    "Ig8",
+    "Ig9",
+    "g10",
+    "Ig11",
+    "Ig12",
+    "22-1"
+  ],
+  "rutaH": [
+    "14-2",
+    "Ig1",
+    "Ig2",
+    "Ig3",
+    "Ig4",
+    "Ig5",
+    "Ig6",
+    "18-3",
+    "Fran1",
+    "F2",
+    "F3",
+    "F4"
+  ],
   "rutaI": ["Ig1", "Ig2", "Ig3", "Ig4", "Ig5", "Ig6", "naza"],
   "rutaJ": ["Fran1", "F2", "F3", "F4", "F5", "F6", "jamapa"],
   "rutaK": ["Ig7", "Ig8", "Ig9", "g10", "Ig11", "Ig12", "22-2"],
@@ -25,7 +63,4 @@
   "rutaX": ["Bou1", "panu", "naza", "color"],
   "rutaY": ["Bou7", "Bou8", "Bou9", "Bou10", "Bou11"],
   "rutaZ": ["Ig1", "Ig2", "Ig3", "Ig4", "Ig5", "cazon"]
-
-
-  
 }

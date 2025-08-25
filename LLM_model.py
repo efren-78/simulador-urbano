@@ -24,7 +24,8 @@ def generar_respuesta(prompt: str, max_tokens: int = 150) -> dict:
         "accion": "none",
         "numCars": 10,
         "trafico": "moderado",
-        "semaforo": None
+        "semaforo": None,
+        "calle": None
     }
 
     try:
@@ -36,13 +37,17 @@ def generar_respuesta(prompt: str, max_tokens: int = 150) -> dict:
                     "content": (
                         "Eres un asistente para un simulador de tráfico urbano. "
                         "Tu única tarea es interpretar instrucciones del usuario "
-                        "y devolver SIEMPRE un JSON puro y válido, sin ningún bloque ```json "
-                        "ni texto adicional. El JSON debe incluir: "
-                        "\"accion\" (uno de: \"start\", \"stop\", \"reload\", \"none\"), "
-                        "\"numCars\" (entero), \"trafico\" (\"alto\", \"moderado\" o \"bajo\"), "
-                        "y opcionalmente \"semaforo\" (\"verde\", \"rojo\", \"amarillo\"). "
-                        "Si el usuario no especifica valores, usa: accion=\"none\", numCars=10, trafico=\"moderado\". "
-                        "No devuelvas explicaciones, solo el JSON en una línea."
+                        "y devolver SIEMPRE un JSON puro y válido. "
+                        "El JSON debe incluir: "
+                        "\"accion\" (uno de: \"start\", \"stop\", \"reload\", \"ajustar\", "
+                        "\"bloquear\", \"desbloquear\", \"none\"), "
+                        "\"numCars\" (entero), "
+                        "\"trafico\" (\"alto\", \"moderado\" o \"bajo\"), "
+                        "opcionalmente \"semaforo\" (\"verde\", \"rojo\", \"amarillo\"), "
+                        "y opcionalmente \"calle\" (nombre de la calle si corresponde). "
+
+                        "No devuelvas bloques de código (```), "
+                        "ni texto adicional, solo JSON válido."
                     )
                 },
                 {"role": "user", "content": prompt}
@@ -55,10 +60,11 @@ def generar_respuesta(prompt: str, max_tokens: int = 150) -> dict:
         raw_content = response.choices[0].message.content.strip()
         logging.info(f"Respuesta cruda del LLM: {raw_content}")
 
-        # Limpia bloques de código
+        # 🔧 Limpia si vino envuelto en ```json ... ```
         if raw_content.startswith("```"):
-            raw_content = re.sub(r"```[a-z]*", "", raw_content, flags=re.IGNORECASE)
-            raw_content = raw_content.strip("`").strip()
+            raw_content = re.sub(r"^```[a-zA-Z]*\n?", "", raw_content)  # abre
+            raw_content = re.sub(r"```$", "", raw_content)              # cierra
+            raw_content = raw_content.strip()
 
         # Intenta convertir a JSON
         try:
@@ -69,7 +75,7 @@ def generar_respuesta(prompt: str, max_tokens: int = 150) -> dict:
 
         # Validación básica
         accion = str(params.get("accion", "none")).lower()
-        if accion not in ["start", "stop", "reload", "none"]:
+        if accion not in ["start", "stop", "reload", "ajustar", "bloquear", "desbloquear", "none"]:
             accion = "none"
 
         try:
@@ -87,11 +93,14 @@ def generar_respuesta(prompt: str, max_tokens: int = 150) -> dict:
             if semaforo not in ["verde", "amarillo", "rojo"]:
                 semaforo = None
 
+        calle = params.get("calle", None)
+
         return {
             "accion": accion,
             "numCars": numCars,
             "trafico": trafico,
-            "semaforo": semaforo
+            "semaforo": semaforo,
+            "calle": calle
         }
 
     except Exception as e:
