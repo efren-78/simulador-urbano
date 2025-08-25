@@ -33,8 +33,6 @@ async function cargarCalles() {
     return false;
   }
 }
-
-//Carpeta /json
 async function cargarRutasAutos() {
   try {
     const response = await fetch("json/rutas_autos.json");
@@ -202,9 +200,11 @@ function createCar(color) {
     group: carGroup,
   };
 }
-
+console.log("Datos de rutasAutos:", rutasAutos);
+console.log("Datos de calles:", calles);
 function crearAutos(cantidad, velocidadBase) {
   const rutasKeys = Object.keys(rutasAutos);
+
   const colores = [
     0xff0000, 0x0000ff, 0x00ff00, 0xffff00, 0xff00ff, 0x00ffff, 0xffa500,
     0x800080,
@@ -565,6 +565,13 @@ async function init() {
   await cargarCalles();
   await cargarRutasAutos();
 
+  const rutasCargadas = await cargarRutasAutos();
+
+  if (!rutasCargadas || Object.keys(rutasAutos).length === 0) {
+    console.error("No se pudieron cargar las rutas de autos correctamente.");
+    return; // Si no se cargaron correctamente, no continúes con la simulación.
+  }
+
   scene = new THREE.Scene();
 
   const loader = new THREE.TextureLoader();
@@ -592,7 +599,7 @@ async function init() {
   });
 
   const ground = new THREE.Mesh(
-    new THREE.PlaneGeometry(200, 200),
+    new THREE.PlaneGeometry(300, 260),
     groundMaterial
   );
   ground.rotation.x = -Math.PI / 2;

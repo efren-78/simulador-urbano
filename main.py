@@ -111,6 +111,13 @@ async def responder(req: PromptRequest):
     # Actualiza configuración general
     sim.set_config(numCars, trafico)
 
+    # Notificación global
+    await notificar_todos({
+        "accion": accion,
+        "numCars": numCars,
+        "trafico": trafico
+    })
+    
     # Ejecutar acciones principales
     if accion == "start" and not sim.running:
         t = threading.Thread(target=sim.iniciar_simulacion)
