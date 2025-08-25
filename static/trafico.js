@@ -16,6 +16,9 @@ let modoEliminarBloqueo = false;
 const bloqueos = [];
 const bloqueoMeshes = [];
 
+let currentView = "top"; // top | street | follow | dron
+let followCar = null; // auto a seguir (por ahora null)
+
 // ----- CARGA DE RECURSOS -----
 //Carpeta /json
 async function cargarCalles() {
@@ -368,6 +371,8 @@ function animate() {
   actualizarSemaforos();
   moverAutos(delta);
 
+  updateCamera();
+
   renderer.render(scene, camera);
   animationId = requestAnimationFrame(animate);
 }
@@ -639,6 +644,44 @@ window.addEventListener("DOMContentLoaded", () => {
   });
 });
 
+function updateCamera() {
+  switch (currentView) {
+    case "top": // Vista cenital con zoom y movimiento
+      camera.position.set(camX, zoomLevel, camZ);
+      camera.lookAt(camX, 0, camZ - 100);
+      break;
+
+    case "street": // Vista nivel calle
+      camera.position.set(-30, 5, 30);
+      camera.lookAt(0, 0, 0);
+      break;
+
+    case "follow": // Seguir auto
+      if (cars && cars.length > 0) {
+        if (!followCar) followCar = cars[0];
+        const carPos = followCar.position;
+        camera.position.set(carPos.x - 10, 8, carPos.z + 5);
+        camera.lookAt(carPos.x, carPos.y, carPos.z);
+      }
+      break;
+
+    case "dron": // Vista aérea inclinada
+      camera.position.set(50, 130, 140);
+      camera.lookAt(50, 30, 50);
+      break;
+  }
+}
+
+// Para cambiar manualmente el auto que seguimos
+let followIndex = 0;
+function siguienteAuto() {
+  if (cars.length > 0) {
+    followIndex = (followIndex + 1) % cars.length;
+    followCar = cars[followIndex];
+    currentView = "follow";
+    console.log("Siguiendo auto:", followIndex);
+  }
+}
 // ----- Eventos -----
 document.getElementById("play-button").addEventListener("click", () => {
   fetch("http://localhost:8000/start")
@@ -791,7 +834,6 @@ socket.onmessage = ({ data }) => {
 
   if (msg.numCars) ajustarCantidadAutos(msg.numCars);
   if (msg.trafico) ajustarTrafico(msg.trafico);
-
   if (msg.accion === "start") {
     playSim();
   } else if (msg.accion === "stop") {
