@@ -1,0 +1,76 @@
+{
+  "calles": {
+    "SanFrancisco": {
+      "nodoInicio": "N1",
+      "nodoFin": "N2",
+      "puntos": [
+        { "x": -150, "y": -80 },
+        { "x": -80, "y": -80 }
+      ]
+    },
+    "SanIgnacio": {
+      "nodoInicio": "N2",  
+      "nodoFin": "N3",
+      "puntos": [
+        { "x": -70, "y": -70 },
+        { "x": -70, "y": -20 }
+      ]
+    },
+    "SanAntonio": {
+      "nodoInicio": "N3",  
+      "nodoFin": "N4",
+      "puntos": [
+        { "x": -60, "y": -10 },
+        { "x": 10, "y": -10 }
+      ]
+    },
+    "SanIsaias": {
+      "nodoInicio": "N4",
+      "nodoFin": "N5",
+      "puntos": [
+        { "x": 20, "y": -20 },
+        { "x": 20, "y": -70 }
+      ]
+    },
+    "SanEfren": {
+      "nodoInicio": "N5", 
+      "nodoFin": "N6",
+      "puntos": [
+        { "x": 30, "y": -80 },
+        { "x": 120, "y": -80 }
+      ]
+    },
+    "SanBere": {
+      "nodoInicio": "N3", 
+      "nodoFin": "N7",
+      "puntos": [
+        { "x": -70, "y": 0 },
+        { "x": -70, "y": 30 }
+      ]
+    },
+    "SanAura": {
+      "nodoInicio": "N7",  
+      "nodoFin": "N8",
+      "puntos": [
+        { "x": -60, "y": 40 },
+        { "x": 120, "y": 40 }
+      ]
+    },
+    "SanAriel": {
+      "nodoInicio": "N8", 
+      "nodoFin": "N9",
+      "puntos": [
+        { "x": 130, "y": -70 },
+        { "x": 130, "y": 30 }
+      ]
+    },
+    "InterFran": {
+      "nodoInicio": "N2",  
+      "nodoFin": "N5",  
+      "puntos":[   
+        { "x": -80, "y": -80 },
+        { "x": -60, "y": -80 }
+      ]
+    }
+  }
+}

@@ -138,7 +138,7 @@ async def responder(req: PromptRequest):
         })
         logging.info(f"Semáforo cambiado a: {estado_semaforo}")
 
-    # 🚧 Manejo de bloqueos
+    # Manejo de bloqueos
     if accion == "bloquear" and calle:
         await notificar_todos({
             "accion": "bloquear",

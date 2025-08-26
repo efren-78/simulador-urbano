@@ -18,21 +18,38 @@ const bloqueoMeshes = [];
 
 let currentView = "top"; // top | street | follow | dron
 let followCar = null; // auto a seguir (por ahora null)
+let nodos = {};
+let callesConNodos = {};
+let grafo = {};
 
 // ----- CARGA DE RECURSOS -----
-//Carpeta /json
+
+async function cargarNodos() {
+  try {
+    const response = await fetch("json/nodos.json");
+    if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
+    const data = await response.json();
+    nodos = data.nodos;
+    console.log("Nodos cargados:", nodos);
+    return true;
+  } catch (error) {
+    console.error("Error cargando nodos:", error);
+    return false;
+  }
+}
+
 async function cargarCalles() {
   try {
-    const response = await fetch("json/rutas.json");
+    const response = await fetch("json/calles.json");
     if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
-    calles = await response.json();
-
-    // Inicializar estado de cada calle
-    for (const calle in calles) {
-      calles[calle].estado = "abierta"; // "abierta" o "cerrada"
+    const data = await response.json();
+    callesConNodos = data.calles;
+    
+    for (const calle in callesConNodos) {
+      callesConNodos[calle].estado = "abierta";
     }
-
-    console.log("Calles cargadas:", calles);
+    
+    console.log("Calles con nodos cargadas:", callesConNodos);
     return true;
   } catch (error) {
     console.error("Error cargando calles:", error);
@@ -53,6 +70,28 @@ async function cargarRutasAutos() {
   }
 }
 
+// ----- CREACION DE GRAFO -----
+function construirGrafo() {
+  const grafo = {};
+  
+  for (const nodoId in nodos) {
+    grafo[nodoId] = [];
+  }
+  
+  for (const calleNombre in callesConNodos) {
+    const calle = callesConNodos[calleNombre];
+    const inicio = calle.nodoInicio;
+    const fin = calle.nodoFin;
+    
+    if (!grafo[inicio].includes(fin)) grafo[inicio].push(fin);
+    if (!grafo[fin].includes(inicio)) grafo[fin].push(inicio);
+  }
+  
+  return grafo;
+}
+
+// ----- CREACION DE OBJETOS -----
+//Escuela
 function crearEscuela(posicion = { x: 0, z: 0 }, escala = 1) {
   const grupo = new THREE.Group();
 
@@ -101,18 +140,6 @@ function crearEscuela(posicion = { x: 0, z: 0 }, escala = 1) {
   grupo.scale.set(3, 3, 3); // ESCALA UNIFORME
   scene.add(grupo);
 }
-
-// ----- CREACIÓN DE ELEMENTOS -----
-//Esta funcion ya no se usa a menos que se quiera una calle fija
-/*function crearCalleLarga(width, length, rotationY = 0, position = { x: 0, z: 0 }) {
-  const geometry = new THREE.PlaneGeometry(width, length);
-  const material = new THREE.MeshPhongMaterial({ color: 0x2c2c2c });
-  const calle = new THREE.Mesh(geometry, material);
-  calle.rotation.x = -Math.PI / 2;
-  calle.rotation.z = rotationY;
-  calle.position.set(position.x, 0, position.z);
-  scene.add(calle);
-}*/
 
 //Semaforo simple
 //Corregir posicion, falta modelado 3d
@@ -220,22 +247,35 @@ function crearAutos(cantidad, velocidadBase) {
 
   for (let i = 0; i < cantidad; i++) {
     const rutaSeleccionada = rutasKeys[i % rutasKeys.length];
-    // Cada punto ahora también guarda el nombre de su calle
-    const callesDeRuta = rutasAutos[rutaSeleccionada]
-      .map((c) => calles[c]?.map((p) => ({ ...p, nombre: c })))
-      .flat();
-
-    const puntos = callesDeRuta.flat();
-    if (puntos.length < 2) continue;
+    const rutaCalles = rutasAutos[rutaSeleccionada];
+    
+    // Convertir ruta de nombres de calles a nodos
+    const rutaNodos = convertirRutaCallesANodos(rutaCalles);
+    
+    if (!rutaNodos || rutaNodos.length < 2) {
+      console.error("No se pudo convertir la ruta a nodos:", rutaCalles);
+      continue;
+    }
+    
+    // Convertir ruta de nodos a coordenadas
+    const puntos = convertirRutaNodosACoordenadas(rutaNodos);
+    
+    if (puntos.length < 2) {
+      console.error("No se pudo generar puntos para la ruta:", rutaNodos);
+      continue;
+    }
 
     const color = colores[i % colores.length];
-    const auto = createCar(color); // usa el auto hecho con geometría simple
-    auto.group.position.set(puntos[0].x, 0.5, puntos[0].y); // posición inicial
-
+    const auto = createCar(color);
+    
+    // Posición inicial (primer punto de la ruta)
+    auto.group.position.set(puntos[0].x, 0.5, puntos[0].y);
+    
     auto.group.userData = {
       ruta: puntos,
       index: 0,
       t: 0,
+      rutaOriginal: puntos, // Guardar la ruta original para posibles reset
     };
 
     cars.push(auto.group);
@@ -245,46 +285,154 @@ function crearAutos(cantidad, velocidadBase) {
   }
 }
 
-// Conexiones entre calles
-const grafo = {
-  SanFrancisco: ["SanIgnacio", "InterFran"],
-  SanIgnacio: ["SanFrancisco", "SanAntonio", "SanBere"],
-  SanAntonio: ["SanIgnacio", "SanIsaias", "SanBere"],
-  SanIsaias: ["SanAntonio", "SanEfren"],
-  SanEfren: ["SanIsaias", "SanAura"],
-  SanBere: ["SanIgnacio", "SanAntonio"],
-  SanAura: ["SanBere", "SanEfren", "SanAriel"],
-  SanAriel: ["SanAura"],
-  InterFran: ["SanFrancisco"],
-};
+// ----- FUNCIONES PARA GRAFO ------
+function encontrarCalleEntreNodos(nodoA, nodoB) {
+  for (const calleNombre in callesConNodos) {
+    const calle = callesConNodos[calleNombre];
+    if ((calle.nodoInicio === nodoA && calle.nodoFin === nodoB) ||
+        (calle.nodoInicio === nodoB && calle.nodoFin === nodoA)) {
+      return calleNombre;
+    }
+  }
+  return null;
+}
+
+function convertirRutaNodosACoordenadas(rutaNodos) {
+  const puntosRuta = [];
+  
+  for (let i = 0; i < rutaNodos.length - 1; i++) {
+    const nodoActual = rutaNodos[i];
+    const nodoSiguiente = rutaNodos[i + 1];
+    
+    // Encontrar la calle que conecta estos nodos
+    const calleNombre = encontrarCalleEntreNodos(nodoActual, nodoSiguiente);
+    if (!calleNombre) continue;
+    
+    const calle = callesConNodos[calleNombre];
+    const puntosCalle = calle.puntos;
+    
+    // Determinar la dirección de la calle
+    const esMismaDireccion = calle.nodoInicio === nodoActual && calle.nodoFin === nodoSiguiente;
+    
+    if (esMismaDireccion) {
+      // Agregar puntos en orden normal
+      puntosRuta.push(...puntosCalle.map(p => ({ ...p, nombre: calleNombre })));
+    } else {
+      // Agregar puntos en orden inverso
+      puntosRuta.push(...puntosCalle.slice().reverse().map(p => ({ ...p, nombre: calleNombre })));
+    }
+  }
+  
+  return puntosRuta;
+}
+
+function convertirRutaCallesANodos(rutaCalles) {
+  const rutaNodos = [];
+  
+  for (let i = 0; i < rutaCalles.length; i++) {
+    const calleActual = rutaCalles[i];
+    const calle = callesConNodos[calleActual];
+    
+    if (!calle) continue;
+    
+    if (i === 0) {
+      // Primera calle: agregar ambos nodos
+      rutaNodos.push(calle.nodoInicio);
+      rutaNodos.push(calle.nodoFin);
+    } else {
+      // Calles subsiguientes: solo agregar el nodo final
+      // Verificar si el nodo inicial ya está en la ruta (conexión)
+      const ultimoNodo = rutaNodos[rutaNodos.length - 1];
+      
+      if (calle.nodoInicio === ultimoNodo) {
+        rutaNodos.push(calle.nodoFin);
+      } else if (calle.nodoFin === ultimoNodo) {
+        rutaNodos.push(calle.nodoInicio);
+      } else {
+        console.error("No hay conexión entre calles en la ruta:", rutaCalles);
+        return null;
+      }
+    }
+  }
+  
+  return rutaNodos;
+}
+
+function verificarConexiones() {
+  console.log("=== VERIFICACIÓN DE CONEXIONES ENTRE CALLES ===");
+  
+  // Verificar cada ruta
+  for (const rutaNombre in rutasAutos) {
+    const rutaCalles = rutasAutos[rutaNombre];
+    console.log(`\nAnalizando ruta: ${rutaNombre} = ${rutaCalles.join(" → ")}`);
+    
+    let esValida = true;
+    let mensajeError = "";
+    
+    for (let i = 0; i < rutaCalles.length - 1; i++) {
+      const calleActual = rutaCalles[i];
+      const calleSiguiente = rutaCalles[i + 1];
+      
+      const calleA = callesConNodos[calleActual];
+      const calleB = callesConNodos[calleSiguiente];
+      
+      if (!calleA || !calleB) {
+        esValida = false;
+        mensajeError = `Calle no encontrada: ${!calleA ? calleActual : calleSiguiente}`;
+        break;
+      }
+      
+      // Verificar si comparten algún nodo
+      const nodosComunes = [
+        calleA.nodoInicio, calleA.nodoFin
+      ].filter(nodo => 
+        nodo === calleB.nodoInicio || nodo === calleB.nodoFin
+      );
+      
+      console.log(`  ${calleActual} → ${calleSiguiente}: ${nodosComunes.length > 0 ? "CONECTADA" : "DESCONECTADA"} ${nodosComunes.length > 0 ? "(nodo: " + nodosComunes[0] + ")" : ""}`);
+      
+      if (nodosComunes.length === 0) {
+        esValida = false;
+        mensajeError = `No hay conexión entre ${calleActual} y ${calleSiguiente}`;
+        break;
+      }
+    }
+    
+    console.log(`  RESULTADO: ${esValida ? "VÁLIDA" : "INVÁLIDA"} ${!esValida ? "(" + mensajeError + ")" : ""}`);
+  }
+}
+
 function actualizarVisualCalles() {
-  callesMeshes.forEach((mesh) => scene.remove(mesh));
-  callesMeshes.length = 0;
   dibujarCallesDesdeJSON();
 }
 
-function encontrarRutaAlternativa(origen, destino, bloqueadas = []) {
+function encontrarRutaAlternativa(nodoOrigen, nodoDestino, callesBloqueadas = []) {
   const visitados = new Set();
-  const cola = [[origen]]; // rutas posibles, empezando por el origen
-
+  const cola = [[nodoOrigen]];
+  
   while (cola.length > 0) {
     const ruta = cola.shift();
-    const nodo = ruta[ruta.length - 1];
-
-    if (nodo === destino) return ruta; // Encontramos una ruta válida
-
-    if (!visitados.has(nodo)) {
-      visitados.add(nodo);
-      const vecinos = grafo[nodo] || [];
-      vecinos.forEach((vecino) => {
-        if (!visitados.has(vecino) && !bloqueadas.includes(vecino)) {
+    const nodoActual = ruta[ruta.length - 1];
+    
+    if (nodoActual === nodoDestino) return ruta;
+    
+    if (!visitados.has(nodoActual)) {
+      visitados.add(nodoActual);
+      
+      const vecinos = grafo[nodoActual] || [];
+      for (const vecino of vecinos) {
+        // Verificar si la calle que conecta estos nodos está bloqueada
+        const calle = encontrarCalleEntreNodos(nodoActual, vecino);
+        if (calle && callesBloqueadas.includes(calle)) continue;
+        
+        if (!visitados.has(vecino)) {
           cola.push([...ruta, vecino]);
         }
-      });
+      }
     }
   }
-
-  return null; // No se encontró ruta
+  
+  return null;
 }
 
 //Obstruccion en calles
@@ -304,20 +452,22 @@ function crearBloqueo(scene, position, radio = 5) {
   bloqueoMeshes.push(bloqueo);
 }
 
-let mostrarNombresCalles = false;
+let mostrarNodosDebug = true; // Cambiar a true para ver nodos durante desarrollo
+let mostrarNombresCalles = true; // Para mostrar nombres de calles
+let mostrarIdsNodos = true; // Para mostrar u ocultar IDs de nodos
 
 function dibujarCallesDesdeJSON() {
   // Eliminar las calles anteriores
   callesMeshes.forEach((mesh) => scene.remove(mesh));
   callesMeshes.length = 0;
 
-  Object.keys(calles).forEach((calleKey) => {
-    const puntos = calles[calleKey];
+  Object.keys(callesConNodos).forEach((calleKey) => {
+    const calle = callesConNodos[calleKey];
+    const puntos = calle.puntos;
     if (puntos.length < 2) return;
 
     const p1 = puntos[0];
     const p2 = puntos[1];
-
     const dx = p2.x - p1.x;
     const dy = p2.y - p1.y;
     const longitud = Math.sqrt(dx * dx + dy * dy);
@@ -327,32 +477,31 @@ function dibujarCallesDesdeJSON() {
     const posX = (p1.x + p2.x) / 2;
     const posZ = (p1.y + p2.y) / 2;
 
-    // Calle amarilla
-    const geometryAmarilla = new THREE.PlaneGeometry(longitud, ancho);
-    const materialAmarilla = new THREE.MeshBasicMaterial({
-      color: 0x000000,
+    const colorCalle = calle.estado === "cerrada" ? 0xff0000 : 0x000000;
+    const colorBorde = calle.estado === "cerrada" ? 0x990000 : 0xffff00;
+
+    // Calle
+    const geometryCalle = new THREE.PlaneGeometry(longitud, ancho);
+    const materialCalle = new THREE.MeshBasicMaterial({
+      color: colorCalle,
       side: THREE.DoubleSide,
     });
+    const meshCalle = new THREE.Mesh(geometryCalle, materialCalle);
+    meshCalle.rotation.x = -Math.PI / 2;
+    meshCalle.rotation.z = -angulo;
+    meshCalle.position.set(posX, 0.01, posZ);
+    meshCalle.userData = { tipo: "calle", nombre: calleKey };
+    scene.add(meshCalle);
+    callesMeshes.push(meshCalle);
 
-    const meshAmarillo = new THREE.Mesh(geometryAmarilla, materialAmarilla);
-    meshAmarillo.rotation.x = -Math.PI / 2;
-    meshAmarillo.rotation.z = -angulo;
-    meshAmarillo.position.set(posX, 0.01, posZ);
-    scene.add(meshAmarillo);
-    callesMeshes.push(meshAmarillo);
-
-    // Borde lateral negro (ambos lados)
-    const offset = 1.9; // Distancia lateral del borde desde el centro
+    // Bordes laterales
+    const offset = 1.9;
     const offsetX = -Math.sin(angulo) * offset;
     const offsetZ = Math.cos(angulo) * offset;
 
-    const geometryBorde = new THREE.PlaneGeometry(longitud, 1); // Borde delgado
-    const materialBorde = new THREE.MeshBasicMaterial({
-      color: 0xffff00,
-      side: THREE.DoubleSide,
-    });
+    const geometryBorde = new THREE.PlaneGeometry(longitud, 1);
+    const materialBorde = new THREE.MeshBasicMaterial({ color: colorBorde, side: THREE.DoubleSide });
 
-    // Borde derecho
     const bordeDerecho = new THREE.Mesh(geometryBorde, materialBorde);
     bordeDerecho.rotation.x = -Math.PI / 2;
     bordeDerecho.rotation.z = -angulo;
@@ -360,58 +509,62 @@ function dibujarCallesDesdeJSON() {
     scene.add(bordeDerecho);
     callesMeshes.push(bordeDerecho);
 
-    // Borde izquierdo
     const bordeIzquierdo = new THREE.Mesh(geometryBorde, materialBorde);
     bordeIzquierdo.rotation.x = -Math.PI / 2;
     bordeIzquierdo.rotation.z = -angulo;
     bordeIzquierdo.position.set(posX - offsetX, 0.011, posZ - offsetZ);
     scene.add(bordeIzquierdo);
     callesMeshes.push(bordeIzquierdo);
-
-    if (mostrarNombresCalles) {
-      const canvas = document.createElement("canvas");
-      canvas.width = 512;
-      canvas.height = 128;
-      const context = canvas.getContext("2d");
-
-      // Fondo transparente (NO pintamos fondo)
-      context.clearRect(0, 0, canvas.width, canvas.height);
-
-      context.font = "bold 100px 'Times New Roman', serif"; // bold para más gordito
-      context.textAlign = "center";
-      context.textBaseline = "middle";
-
-      // Primero dibujas el contorno (línea negra)
-      context.lineWidth = 10; // Grosor del contorno, ajusta al gusto
-      context.strokeStyle = "black"; // Color del contorno
-      context.strokeText(calleKey, canvas.width / 2, canvas.height / 2);
-
-      // Luego rellenas el texto en blanco
-      context.fillStyle = "white";
-      context.fillText(calleKey, canvas.width / 2, canvas.height / 2);
-
-      const texture = new THREE.CanvasTexture(canvas);
-      texture.needsUpdate = true;
-      texture.minFilter = THREE.LinearFilter;
-
-      const materialText = new THREE.SpriteMaterial({
-        map: texture,
-        transparent: true,
-      });
-      const sprite = new THREE.Sprite(materialText);
-      sprite.scale.set(20, 5, 1); // Más grande y elegante
-
-      // Posición: un poco arriba de la calle
-      sprite.position.set(posX, 2.5, posZ);
-
-      // Rotar si quieres que el texto siga la dirección de la calle:
-      sprite.rotation.z = -angulo;
-
-      scene.add(sprite);
-      callesMeshes.push(sprite);
-    }
   });
+
+  
+  // Dibujar todos los nodos como intersecciones
+  if (mostrarNodosDebug) {
+    for (const nodoId in nodos) {
+      const nodo = nodos[nodoId];
+
+      // Tamaño proporcional al ancho de calle
+      const sizeNodo = 22;
+
+      const geometryNodo = new THREE.PlaneGeometry(sizeNodo, sizeNodo);
+      const materialNodo = new THREE.MeshBasicMaterial({
+        color: 0x333333, // color neutro para intersecciones
+        side: THREE.DoubleSide,
+      });
+
+      const meshNodo = new THREE.Mesh(geometryNodo, materialNodo);
+      meshNodo.rotation.x = -Math.PI / 2;
+      meshNodo.position.set(nodo.x, 0.015, nodo.y);
+      scene.add(meshNodo);
+      callesMeshes.push(meshNodo);
+
+      // Texto opcional con ID
+      if (mostrarIdsNodos) {
+        const canvas = document.createElement("canvas");
+        canvas.width = 256;
+        canvas.height = 128;
+        const context = canvas.getContext("2d");
+        context.clearRect(0, 0, canvas.width, canvas.height);
+        context.font = "bold 40px Arial";
+        context.fillStyle = "white";
+        context.textAlign = "center";
+        context.textBaseline = "middle";
+        context.fillText(nodoId, canvas.width / 2, canvas.height / 2);
+
+        const texture = new THREE.CanvasTexture(canvas);
+        const materialText = new THREE.SpriteMaterial({ map: texture, transparent: true });
+        const sprite = new THREE.Sprite(materialText);
+        sprite.scale.set(10, 5, 1);
+        sprite.position.set(nodo.x, 3, nodo.y);
+        scene.add(sprite);
+        callesMeshes.push(sprite);
+      }
+    }
+
+    
+  }
 }
+
 // ----- Animacion -----
 function animate() {
   if (!running) return;
@@ -467,15 +620,19 @@ function moverAutos(delta) {
       const dist = car.position.distanceTo(semaforo.position);
       if (dist < 3 && semaforo.userData.state === "red") detener = true;
     });
-    const calleActual = puntos[index].nombre;
-    if (calles[calleActual]?.estado === "cerrada") {
+    
+    // Verificar si la calle actual está bloqueada (USANDO EL NUEVO SISTEMA)
+    const calleActual = puntos[index]?.nombre;
+    if (calleActual && callesConNodos[calleActual]?.estado === "cerrada") {
       detener = true;
       if (!car.userData.waitStart) car.userData.waitStart = performance.now();
       else if ((performance.now() - car.userData.waitStart) / 1000 > 3) {
-        cambiarRutaAuto(car);
+        cambiarRutaAuto(car); // ¡ESTA ES LA LÍNEA CLAVE!
         car.userData.waitStart = null;
       }
-    } else car.userData.waitStart = null;
+    } else {
+      car.userData.waitStart = null;
+    }
 
     if (!detener) {
       let p1 = puntos[index],
@@ -545,37 +702,89 @@ function rutaTieneBloqueo(ruta) {
 
 function cambiarRutaAuto(car) {
   const puntoActual = car.userData.ruta[car.userData.index];
-  const calleInicio = puntoActual.nombre;
-  const calleDestino = car.userData.ruta[car.userData.ruta.length - 1].nombre;
-
-  const caminoAlternativo = encontrarRutaAlternativa(
-    calleInicio,
-    calleDestino,
-    Object.keys(calles).filter((c) => calles[c].estado === "cerrada")
+  
+  // Encontrar el nodo más cercano al auto
+  let nodoCercano = null;
+  let distanciaMinima = Infinity;
+  
+  for (const nodoId in nodos) {
+    const nodo = nodos[nodoId];
+    const distancia = Math.sqrt(
+      Math.pow(car.position.x - nodo.x, 2) + 
+      Math.pow(car.position.z - nodo.y, 2)
+    );
+    
+    if (distancia < distanciaMinima) {
+      distanciaMinima = distancia;
+      nodoCercano = nodoId;
+    }
+  }
+  
+  if (!nodoCercano) return;
+  
+  // Encontrar el nodo destino (último nodo de la ruta original)
+  const rutaOriginal = car.userData.ruta;
+  const ultimoPunto = rutaOriginal[rutaOriginal.length - 1];
+  
+  let nodoDestino = null;
+  distanciaMinima = Infinity;
+  
+  for (const nodoId in nodos) {
+    const nodo = nodos[nodoId];
+    const distancia = Math.sqrt(
+      Math.pow(ultimoPunto.x - nodo.x, 2) + 
+      Math.pow(ultimoPunto.y - nodo.y, 2)
+    );
+    
+    if (distancia < distanciaMinima) {
+      distanciaMinima = distancia;
+      nodoDestino = nodoId;
+    }
+  }
+  
+  if (!nodoDestino) return;
+  
+  // Encontrar calles bloqueadas
+  const callesBloqueadas = Object.keys(callesConNodos).filter(
+    calle => callesConNodos[calle].estado === "cerrada"
   );
-  if (!caminoAlternativo || caminoAlternativo.length === 0) {
-    console.log("No hay ruta alternativa");
+  
+  // Encontrar ruta alternativa
+  const rutaNodos = encontrarRutaAlternativa(nodoCercano, nodoDestino, callesBloqueadas);
+  
+  if (!rutaNodos || rutaNodos.length === 0) {
+    console.log("No se encontró ruta alternativa");
     return;
   }
-
-  const nuevaRutaCoordenadas = caminoAlternativo
-    .map((c) => calles[c]?.map((p) => ({ ...p, nombre: c })))
-    .flat();
-  let indiceMasCercano = 0,
-    distanciaMin = Infinity;
+  
+  // Convertir ruta de nodos a coordenadas
+  const nuevaRutaCoordenadas = convertirRutaNodosACoordenadas(rutaNodos);
+  
+  if (nuevaRutaCoordenadas.length === 0) {
+    console.log("No se pudo convertir la ruta de nodos a coordenadas");
+    return;
+  }
+  
+  // Encontrar el punto más cercano en la nueva ruta
+  let indiceMasCercano = 0;
+  distanciaMinima = Infinity;
+  
   nuevaRutaCoordenadas.forEach((p, i) => {
-    const dx = p.x - car.position.x,
-      dy = p.y - car.position.z;
-    const dist = dx * dx + dy * dy;
-    if (dist < distanciaMin) {
-      distanciaMin = dist;
+    const dx = p.x - car.position.x;
+    const dz = p.y - car.position.z;
+    const dist = dx * dx + dz * dz;
+    if (dist < distanciaMinima) {
+      distanciaMinima = dist;
       indiceMasCercano = i;
     }
   });
+  
+  // Actualizar la ruta del auto
   car.userData.ruta = nuevaRutaCoordenadas;
   car.userData.index = indiceMasCercano;
   car.userData.t = 0;
-  console.log("Ruta cambiada a:", caminoAlternativo);
+  
+  console.log("Ruta cambiada a:", rutaNodos);
 }
 
 // -----Procesamiento de prompteo-----
@@ -603,14 +812,21 @@ async function enviarPrompt() {
 
 // ----- Inicializacion -----
 async function init() {
+  //Cargar datos
+  await cargarNodos();
   await cargarCalles();
   await cargarRutasAutos();
 
-  const rutasCargadas = await cargarRutasAutos();
+  // Construir grafo
+  grafo = construirGrafo();
+  console.log("Grafo construido:", grafo);
 
-  if (!rutasCargadas || Object.keys(rutasAutos).length === 0) {
+  verificarConexiones();
+
+  // Verificar si las rutas se cargaron correctamente (ya no necesitas cargarlas de nuevo)
+  if (Object.keys(rutasAutos).length === 0) {
     console.error("No se pudieron cargar las rutas de autos correctamente.");
-    return; // Si no se cargaron correctamente, no continúes con la simulación.
+    return;
   }
 
   scene = new THREE.Scene();
@@ -952,19 +1168,21 @@ document
 
 // ---------------------- BLOQUEO / DESBLOQUEO ----------------------
 function bloquearCalle(nombreCalle) {
-  if (calles[nombreCalle]) {
-    calles[nombreCalle].estado = "cerrada";
+  if (callesConNodos[nombreCalle]) {
+    callesConNodos[nombreCalle].estado = "cerrada";
     actualizarVisualCalles();
     console.log("Calle bloqueada:", nombreCalle);
   }
 }
+
 function desbloquearCalle(nombreCalle) {
-  if (calles[nombreCalle]) {
-    calles[nombreCalle].estado = "abierta";
+  if (callesConNodos[nombreCalle]) {
+    callesConNodos[nombreCalle].estado = "abierta";
     actualizarVisualCalles();
     console.log("Calle desbloqueada:", nombreCalle);
   }
 }
+
 function actualizarVisualCalles() {
   callesMeshes.forEach((mesh) => {
     const nombre = mesh.userData.nombre;
