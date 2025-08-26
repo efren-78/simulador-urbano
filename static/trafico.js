@@ -23,7 +23,7 @@ let callesConNodos = {};
 let grafo = {};
 
 // ----- CARGA DE RECURSOS -----
-
+//Intersecciones
 async function cargarNodos() {
   try {
     const response = await fetch("json/nodos.json");
@@ -38,6 +38,7 @@ async function cargarNodos() {
   }
 }
 
+//Aristas
 async function cargarCalles() {
   try {
     const response = await fetch("json/calles.json");
@@ -57,6 +58,7 @@ async function cargarCalles() {
   }
 }
 
+//Rutass
 async function cargarRutasAutos() {
   try {
     const response = await fetch("json/rutas_autos.json");
@@ -357,7 +359,7 @@ function convertirRutaCallesANodos(rutaCalles) {
   
   return rutaNodos;
 }
-
+/*
 function verificarConexiones() {
   console.log("=== VERIFICACIÓN DE CONEXIONES ENTRE CALLES ===");
   
@@ -400,7 +402,7 @@ function verificarConexiones() {
     
     console.log(`  RESULTADO: ${esValida ? "VÁLIDA" : "INVÁLIDA"} ${!esValida ? "(" + mensajeError + ")" : ""}`);
   }
-}
+}*/
 
 function actualizarVisualCalles() {
   dibujarCallesDesdeJSON();
@@ -457,112 +459,164 @@ let mostrarNombresCalles = true; // Para mostrar nombres de calles
 let mostrarIdsNodos = true; // Para mostrar u ocultar IDs de nodos
 
 function dibujarCallesDesdeJSON() {
-  // Eliminar las calles anteriores
-  callesMeshes.forEach((mesh) => scene.remove(mesh));
-  callesMeshes.length = 0;
+    // Eliminar las calles anteriores
+    callesMeshes.forEach((mesh) => scene.remove(mesh));
+    callesMeshes.length = 0;
 
-  Object.keys(callesConNodos).forEach((calleKey) => {
-    const calle = callesConNodos[calleKey];
-    const puntos = calle.puntos;
-    if (puntos.length < 2) return;
+    Object.keys(callesConNodos).forEach((calleKey) => {
+        const calle = callesConNodos[calleKey];
+        const puntos = calle.puntos;
+        if (puntos.length < 2) return;
 
-    const p1 = puntos[0];
-    const p2 = puntos[1];
-    const dx = p2.x - p1.x;
-    const dy = p2.y - p1.y;
-    const longitud = Math.sqrt(dx * dx + dy * dy);
-    const ancho = 20;
+        const p1 = puntos[0];
+        const p2 = puntos[1];
+        const dx = p2.x - p1.x;
+        const dy = p2.y - p1.y;
+        const longitud = Math.sqrt(dx * dx + dy * dy);
+        const ancho = 20;
 
-    const angulo = Math.atan2(dy, dx);
-    const posX = (p1.x + p2.x) / 2;
-    const posZ = (p1.y + p2.y) / 2;
+        const angulo = Math.atan2(dy, dx);
+        const posX = (p1.x + p2.x) / 2;
+        const posZ = (p1.y + p2.y) / 2;
 
-    const colorCalle = calle.estado === "cerrada" ? 0xff0000 : 0x000000;
-    const colorBorde = calle.estado === "cerrada" ? 0x990000 : 0xffff00;
+        const colorCalle = calle.estado === "cerrada" ? 0xff0000 : 0x000000;
+        const colorBorde = calle.estado === "cerrada" ? 0x990000 : 0xffff00;
 
-    // Calle
-    const geometryCalle = new THREE.PlaneGeometry(longitud, ancho);
-    const materialCalle = new THREE.MeshBasicMaterial({
-      color: colorCalle,
-      side: THREE.DoubleSide,
+        // Calle
+        const geometryCalle = new THREE.PlaneGeometry(longitud, ancho);
+        const materialCalle = new THREE.MeshBasicMaterial({
+            color: colorCalle,
+            side: THREE.DoubleSide,
+        });
+        const meshCalle = new THREE.Mesh(geometryCalle, materialCalle);
+        meshCalle.rotation.x = -Math.PI / 2;
+        meshCalle.rotation.z = -angulo;
+        meshCalle.position.set(posX, 0.01, posZ);
+        meshCalle.userData = { tipo: "calle", nombre: calleKey };
+        scene.add(meshCalle);
+        callesMeshes.push(meshCalle);
+
+        // Bordes laterales
+        const offset = 1.9;
+        const offsetX = -Math.sin(angulo) * offset;
+        const offsetZ = Math.cos(angulo) * offset;
+
+        const geometryBorde = new THREE.PlaneGeometry(longitud, 1);
+        const materialBorde = new THREE.MeshBasicMaterial({ 
+            color: colorBorde, 
+            side: THREE.DoubleSide 
+        });
+
+        const bordeDerecho = new THREE.Mesh(geometryBorde, materialBorde);
+        bordeDerecho.rotation.x = -Math.PI / 2;
+        bordeDerecho.rotation.z = -angulo;
+        bordeDerecho.position.set(posX + offsetX, 0.011, posZ + offsetZ);
+        scene.add(bordeDerecho);
+        callesMeshes.push(bordeDerecho);
+
+        const bordeIzquierdo = new THREE.Mesh(geometryBorde, materialBorde);
+        bordeIzquierdo.rotation.x = -Math.PI / 2;
+        bordeIzquierdo.rotation.z = -angulo;
+        bordeIzquierdo.position.set(posX - offsetX, 0.011, posZ - offsetZ);
+        scene.add(bordeIzquierdo);
+        callesMeshes.push(bordeIzquierdo);
+
+        // DIBUJAR NOMBRES DE CALLES - AQUÍ ESTÁ EL CAMBIO
+        if (mostrarNombresCalles) {
+            const canvas = document.createElement("canvas");
+            canvas.width = 512;
+            canvas.height = 128;
+            const context = canvas.getContext("2d");
+
+            // Fondo transparente
+            context.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Configurar texto
+            context.font = "bold 70px 'Arial', sans-serif";
+            context.textAlign = "center";
+            context.textBaseline = "middle";
+
+            // Contorno negro para mejor legibilidad
+            context.lineWidth = 8;
+            context.strokeStyle = "#000000";
+            context.strokeText(calleKey, canvas.width / 2, canvas.height / 2);
+
+            // Texto principal (color según estado)
+            context.fillStyle = calle.estado === "cerrada" ? "#ff6666" : "#ffffff";
+            context.fillText(calleKey, canvas.width / 2, canvas.height / 2);
+
+            // Crear textura
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.needsUpdate = true;
+            texture.minFilter = THREE.LinearFilter;
+
+            // Crear sprite
+            const materialText = new THREE.SpriteMaterial({ 
+                map: texture, 
+                transparent: true,
+                opacity: 0.9
+            });
+            
+            const sprite = new THREE.Sprite(materialText);
+            sprite.scale.set(25, 6, 1);
+            sprite.position.set(posX, 5, posZ); // Más alto para mejor visibilidad
+            sprite.rotation.z = -angulo; // Rotar según dirección de la calle
+            
+            // Pequeño ajuste de posición para mejor centrado
+            const offsetAltura = Math.sin(angulo) * 2;
+            const offsetAnchura = Math.cos(angulo) * 2;
+            sprite.position.x += offsetAnchura;
+            sprite.position.z += offsetAltura;
+
+            scene.add(sprite);
+            callesMeshes.push(sprite);
+        }
     });
-    const meshCalle = new THREE.Mesh(geometryCalle, materialCalle);
-    meshCalle.rotation.x = -Math.PI / 2;
-    meshCalle.rotation.z = -angulo;
-    meshCalle.position.set(posX, 0.01, posZ);
-    meshCalle.userData = { tipo: "calle", nombre: calleKey };
-    scene.add(meshCalle);
-    callesMeshes.push(meshCalle);
 
-    // Bordes laterales
-    const offset = 1.9;
-    const offsetX = -Math.sin(angulo) * offset;
-    const offsetZ = Math.cos(angulo) * offset;
+    // DIBUJAR NODOS DE DEBUG (separado, no afecta los nombres)
+    if (mostrarNodosDebug) {
+        for (const nodoId in nodos) {
+            const nodo = nodos[nodoId];
+            const sizeNodo = 22;
 
-    const geometryBorde = new THREE.PlaneGeometry(longitud, 1);
-    const materialBorde = new THREE.MeshBasicMaterial({ color: colorBorde, side: THREE.DoubleSide });
+            const geometryNodo = new THREE.PlaneGeometry(sizeNodo, sizeNodo);
+            const materialNodo = new THREE.MeshBasicMaterial({
+                color: 0x333333,
+                side: THREE.DoubleSide,
+            });
 
-    const bordeDerecho = new THREE.Mesh(geometryBorde, materialBorde);
-    bordeDerecho.rotation.x = -Math.PI / 2;
-    bordeDerecho.rotation.z = -angulo;
-    bordeDerecho.position.set(posX + offsetX, 0.011, posZ + offsetZ);
-    scene.add(bordeDerecho);
-    callesMeshes.push(bordeDerecho);
+            const meshNodo = new THREE.Mesh(geometryNodo, materialNodo);
+            meshNodo.rotation.x = -Math.PI / 2;
+            meshNodo.position.set(nodo.x, 0.015, nodo.y);
+            scene.add(meshNodo);
+            callesMeshes.push(meshNodo);
 
-    const bordeIzquierdo = new THREE.Mesh(geometryBorde, materialBorde);
-    bordeIzquierdo.rotation.x = -Math.PI / 2;
-    bordeIzquierdo.rotation.z = -angulo;
-    bordeIzquierdo.position.set(posX - offsetX, 0.011, posZ - offsetZ);
-    scene.add(bordeIzquierdo);
-    callesMeshes.push(bordeIzquierdo);
-  });
+            // Texto con ID de nodo
+            if (mostrarIdsNodos) {
+                const canvas = document.createElement("canvas");
+                canvas.width = 256;
+                canvas.height = 128;
+                const context = canvas.getContext("2d");
+                context.clearRect(0, 0, canvas.width, canvas.height);
+                context.font = "bold 40px Arial";
+                context.fillStyle = "white";
+                context.textAlign = "center";
+                context.textBaseline = "middle";
+                context.fillText(nodoId, canvas.width / 2, canvas.height / 2);
 
-  
-  // Dibujar todos los nodos como intersecciones
-  if (mostrarNodosDebug) {
-    for (const nodoId in nodos) {
-      const nodo = nodos[nodoId];
-
-      // Tamaño proporcional al ancho de calle
-      const sizeNodo = 22;
-
-      const geometryNodo = new THREE.PlaneGeometry(sizeNodo, sizeNodo);
-      const materialNodo = new THREE.MeshBasicMaterial({
-        color: 0x333333, // color neutro para intersecciones
-        side: THREE.DoubleSide,
-      });
-
-      const meshNodo = new THREE.Mesh(geometryNodo, materialNodo);
-      meshNodo.rotation.x = -Math.PI / 2;
-      meshNodo.position.set(nodo.x, 0.015, nodo.y);
-      scene.add(meshNodo);
-      callesMeshes.push(meshNodo);
-
-      // Texto opcional con ID
-      if (mostrarIdsNodos) {
-        const canvas = document.createElement("canvas");
-        canvas.width = 256;
-        canvas.height = 128;
-        const context = canvas.getContext("2d");
-        context.clearRect(0, 0, canvas.width, canvas.height);
-        context.font = "bold 40px Arial";
-        context.fillStyle = "white";
-        context.textAlign = "center";
-        context.textBaseline = "middle";
-        context.fillText(nodoId, canvas.width / 2, canvas.height / 2);
-
-        const texture = new THREE.CanvasTexture(canvas);
-        const materialText = new THREE.SpriteMaterial({ map: texture, transparent: true });
-        const sprite = new THREE.Sprite(materialText);
-        sprite.scale.set(10, 5, 1);
-        sprite.position.set(nodo.x, 3, nodo.y);
-        scene.add(sprite);
-        callesMeshes.push(sprite);
-      }
+                const texture = new THREE.CanvasTexture(canvas);
+                const materialText = new THREE.SpriteMaterial({ 
+                    map: texture, 
+                    transparent: true 
+                });
+                const sprite = new THREE.Sprite(materialText);
+                sprite.scale.set(10, 5, 1);
+                sprite.position.set(nodo.x, 3, nodo.y);
+                scene.add(sprite);
+                callesMeshes.push(sprite);
+            }
+        }
     }
-
-    
-  }
 }
 
 // ----- Animacion -----
@@ -821,7 +875,7 @@ async function init() {
   grafo = construirGrafo();
   console.log("Grafo construido:", grafo);
 
-  verificarConexiones();
+  //verificarConexiones();
 
   // Verificar si las rutas se cargaron correctamente (ya no necesitas cargarlas de nuevo)
   if (Object.keys(rutasAutos).length === 0) {
