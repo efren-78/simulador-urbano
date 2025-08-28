@@ -1,22 +1,41 @@
-# 🏙️ Simulador Urbano con SUMO (NeuroOctopus)
-NeuroOctopus es un proyecto de simulación de tráfico urbano a pequeña escala, controlado por comandos en lenguaje natural. El sistema permite generar eventos que alteren la circulación a base de un LLM de OpenAI
+🧠🚦 NeuroOctopus: Simulador Urbano con SUMO
+NeuroOctopus es un proyecto de simulación de tráfico urbano a pequeña escala, controlado mediante comandos en lenguaje natural. Utiliza un modelo de lenguaje de OpenAI para generar eventos dinámicos que afectan la circulación en tiempo real.
+
+✨ Funcionalidades
+🧠 Control por lenguaje natural
+🌧️ Simulación de condiciones climáticas (lluvia, niebla, etc.)
+🚧 Generación de bloqueos de calles
+🚑 Simulación de accidentes de tráfico
+📦 Requisitos
+🔧 Python
+Instala las dependencias necesarias con:
+
+-   pip install -r requirements.txt
+
+Si tienes problemas, intenta con:
+
+-  python -m pip install -r requirements.txt
 
 
-## 📦 Requisitos
+🚀 Ejecución
+Para iniciar el servidor FastAPI:
 
-### 🔧 Python
+-  uvicorn main:app --reload
 
-Instala las dependencias necesarias:
-- pip install -r requirements.txt
+🔐 Configuración
+Asegúrate de tener un archivo .env en la raíz del proyecto con tu clave de API de OpenAI:
 
-Y si no funciona intenta con:
-- python -r pip install requirements.txt
-
-
-Para correr el codigo inicializa el FastApi con el comando:
-- uvicorn main:app  --reload
+OPENAI_API_KEY="sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 
 
-### Recordatorio
-Para que funcione se debe tener en un archivo .env la declaracion de nuestra ApiKey:
-- OPENAI_API_KEY="sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+📚 Documentación
+Una guia de comandos disponibles en lenguaje natural para controlar el simulador: 
+
+*Agrega 10 autos
+*Lluvia intensa casua accidente en SanAura
+*Vista siguiendo auto
+*Lluvia intensa por 5 minutos
+*stop
+*play
+
+
