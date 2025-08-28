@@ -22,6 +22,28 @@ let nodos = {};
 let callesConNodos = {};
 let grafo = {};
 
+let accidentesActivos = new Map(); // Mapa de accidentes activos
+const efectosAccidente = {
+    leve: { 
+        radio: 15, 
+        reduccionVelocidad: 0.5, 
+        color: 0xffff00,
+        humoIntensity: 0.3
+    },
+    moderado: { 
+        radio: 25, 
+        reduccionVelocidad: 0.7, 
+        color: 0xff9900,
+        humoIntensity: 0.6
+    },
+    grave: { 
+        radio: 40, 
+        reduccionVelocidad: 0.9, 
+        color: 0xff0000,
+        humoIntensity: 0.9
+    }
+};
+
 // ----- CARGA DE RECURSOS -----
 //Intersecciones
 async function cargarNodos() {
@@ -642,6 +664,7 @@ function animate() {
 
   actualizarSemaforos();
   moverAutos(delta);
+  animarAccidentes();
 
   updateCamera();
 
@@ -680,7 +703,7 @@ function moverAutos(delta) {
   cars.forEach((car, i) => {
     const puntos = car.userData.ruta;
     const index = car.userData.index;
-    const speed = carSpeeds[i];
+    const speed = carSpeeds[i] * (car.userData.factorAccidente || 1);
     let detener = false;
 
     // Verificar semáforos
@@ -1193,6 +1216,12 @@ socket.onmessage = ({ data }) => {
       desbloquearCalle(msg.calle);
       mostrarNotificacion(`Calle ${msg.calle} desbloqueada`);
   }
+  else if (msg.accion === "accidente") {
+      simularAccidente(msg.tipo, msg.ubicacion, msg.duracion);
+  }
+  else if (msg.accion === "limpiar_accidente") {
+      limpiarAccidente(msg.ubicacion);
+  }
 };
 
 // Ajustar cantidad de autos
@@ -1260,4 +1289,177 @@ function actualizarVisualCalles() {
       calles[nombre].estado === "cerrada" ? 0xff0000 : 0x000000
     );
   });
+}
+
+// ----- Accidente -----
+
+function simularAccidente(tipo, ubicacion, duracionMinutos) {
+    // Buscar la ubicación en el grafo
+    const coordenadas = buscarUbicacionEnGrafo(ubicacion);
+    if (!coordenadas) {
+        console.error("Ubicación de accidente no encontrada:", ubicacion);
+        return;
+    }
+
+    const efecto = efectosAccidente[tipo];
+    const accidenteId = `accidente_${Date.now()}`;
+    
+    // Crear visualización del accidente
+    const geometria = new THREE.CylinderGeometry(efecto.radio, efecto.radio, 2, 32);
+    const material = new THREE.MeshPhongMaterial({ 
+        color: efecto.color, 
+        transparent: true, 
+        opacity: 0.6 
+    });
+    
+    const meshAccidente = new THREE.Mesh(geometria, material);
+    meshAccidente.position.set(coordenadas.x, 1, coordenadas.y);
+    meshAccidente.rotation.x = Math.PI / 2;
+    scene.add(meshAccidente);
+    
+    // Efecto de partículas (humo)
+    const humo = crearEfectoHumo(tipo, coordenadas);
+    scene.add(humo);
+    
+    // Guardar referencia
+    accidentesActivos.set(accidenteId, {
+        mesh: meshAccidente,
+        humo: humo,
+        tipo: tipo,
+        ubicacion: ubicacion,
+        coordenadas: coordenadas,
+        reduccionVelocidad: efecto.reduccionVelocidad,
+        tiempoFin: Date.now() + (duracionMinutos * 60000)
+    });
+    
+    // Aplicar efectos a autos
+    aplicarEfectoAccidenteAutos(coordenadas, efecto.radio, efecto.reduccionVelocidad);
+    
+    mostrarNotificacion(`Accidente ${tipo} simulado en ${ubicacion}`);
+}
+
+// MEJORA la función de búsqueda:
+function buscarUbicacionEnGrafo(ubicacionTexto) {
+    if (!ubicacionTexto || typeof ubicacionTexto !== 'string') {
+        console.error("Texto de ubicación inválido");
+        return null;
+    }
+
+    const textoNormalizado = ubicacionTexto.toLowerCase()
+        .trim()
+        .replace(/avenida|av\.?/gi, '')
+        .replace(/calle|cll\.?/gi, '')
+        .replace(/\./g, '')
+        .trim();
+
+    console.log("Buscando ubicación para:", textoNormalizado);
+
+    // 1. Búsqueda exacta
+    for (const nombreCalle in callesConNodos) {
+        const nombreNormalizado = nombreCalle.toLowerCase();
+        if (nombreNormalizado === textoNormalizado) {
+            console.log("Encontrado por nombre exacto:", nombreCalle);
+            return obtenerPuntoMedioCalle(nombreCalle);
+        }
+    }
+
+    // 2. Búsqueda parcial (AÑADE ESTO)
+    for (const nombreCalle in callesConNodos) {
+        const nombreNormalizado = nombreCalle.toLowerCase();
+        if (nombreNormalizado.includes(textoNormalizado) || 
+            textoNormalizado.includes(nombreNormalizado)) {
+            console.log("Encontrado por coincidencia parcial:", nombreCalle);
+            return obtenerPuntoMedioCalle(nombreCalle);
+        }
+    }
+
+    console.error("Ubicación no encontrada:", ubicacionTexto);
+    return null;
+}
+
+function aplicarEfectoAccidenteAutos(epicentro, radio, reduccion) {
+    cars.forEach(auto => {
+        const posAuto = new THREE.Vector3(auto.position.x, 0, auto.position.z);
+        const posEpicentro = new THREE.Vector3(epicentro.x, 0, epicentro.y);
+        const distancia = posAuto.distanceTo(posEpicentro);
+        
+        if (distancia < radio) {
+            const factor = 1 - (reduccion * (1 - distancia/radio));
+            auto.userData.factorAccidente = factor;
+            
+            if (distancia < radio * 0.3) {
+                cambiarRutaAuto(auto);
+            }
+        }
+    });
+}
+
+function limpiarAccidente(ubicacion) {
+    for (const [id, accidente] of accidentesActivos.entries()) {
+        if (accidente.ubicacion === ubicacion) {
+            scene.remove(accidente.mesh);
+            scene.remove(accidente.humo);
+            
+            // Limpiar efectos en autos
+            cars.forEach(auto => {
+                if (auto.userData.factorAccidente) {
+                    auto.userData.factorAccidente = 1;
+                }
+            });
+            
+            accidentesActivos.delete(id);
+            mostrarNotificacion(`Accidente en ${ubicacion} ha sido limpiado`);
+        }
+    }
+}
+
+function obtenerPuntoMedioCalle(nombreCalle) {
+    const calle = callesConNodos[nombreCalle];
+    if (!calle || !calle.puntos || calle.puntos.length === 0) {
+        console.error("Calle no encontrada o sin puntos:", nombreCalle);
+        return null;
+    }
+
+    const puntos = calle.puntos;
+    const puntoMedioIndex = Math.floor(puntos.length / 2);
+    
+    return {
+        x: puntos[puntoMedioIndex].x,
+        y: puntos[puntoMedioIndex].y,
+        calle: nombreCalle
+    };
+}
+
+// Alternativa sin textura:
+function crearEfectoHumo(tipo, coordenadas) {
+    const geometry = new THREE.SphereGeometry(3, 8, 8);
+    const material = new THREE.MeshBasicMaterial({
+        color: tipo === 'grave' ? 0x333333 : 0x888888,
+        transparent: true,
+        opacity: 0.6
+    });
+    
+    const humo = new THREE.Mesh(geometry, material);
+    humo.position.set(coordenadas.x, 3, coordenadas.y);
+    humo.userData.offsetY = 0;
+    
+    return humo;
+}
+
+
+// AÑADE en tu función animate() o en moverAutos():
+function animarAccidentes() {
+    accidentesActivos.forEach((accidente, id) => {
+        // Animación de humo
+        if (accidente.humo) {
+            accidente.humo.userData.offsetY += 0.05;
+            accidente.humo.position.y = 3 + Math.sin(accidente.humo.userData.offsetY) * 2;
+            accidente.humo.material.opacity = 0.4 + Math.sin(accidente.humo.userData.offsetY * 0.5) * 0.2;
+        }
+        
+        // Limpieza automática por tiempo
+        if (Date.now() > accidente.tiempoFin) {
+            limpiarAccidente(accidente.ubicacion);
+        }
+    });
 }

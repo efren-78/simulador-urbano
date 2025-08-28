@@ -95,6 +95,7 @@ class PromptRequest(BaseModel):
 
 #Endpoint que interpreta las instrucciones en lenguaje natural 
 
+# ------NLP------
 @app.post("/nlp")
 async def responder(req: PromptRequest):
     params = generar_respuesta(req.prompt, req.max_tokens)
@@ -106,7 +107,10 @@ async def responder(req: PromptRequest):
     numCars = params.get("numCars", 10)
     trafico = params.get("trafico", "moderado")
     semaforo = params.get("semaforo", None)
-    calle = params.get("calle", None)   # 👈 nuevo
+    calle = params.get("calle", None)
+    tipo_accidente = params.get("tipo_accidente", "leve")  # ✅ Añadir estas líneas
+    duracion_accidente = params.get("duracion_accidente", 15)
+    ubicacion_accidente = params.get("ubicacion_accidente", "")
 
     # Actualiza configuración general
     sim.set_config(numCars, trafico)
@@ -155,6 +159,23 @@ async def responder(req: PromptRequest):
         logging.info(f"Bloqueo eliminado en calle: {calle}")
         return {"status": f"Calle '{calle}' desbloqueada", "calle": calle}
 
+    elif accion == "accidente":
+        await notificar_todos({
+            "accion": "accidente",
+            "tipo": tipo_accidente,
+            "duracion": duracion_accidente,
+            "ubicacion": ubicacion_accidente
+        })
+        
+        asyncio.create_task(limpiar_accidente_automatico(duracion_accidente, ubicacion_accidente))
+        
+        return {
+            "status": f"Accidente {tipo_accidente} simulado en {ubicacion_accidente} por {duracion_accidente}min",
+            "tipo": tipo_accidente,
+            "duracion": duracion_accidente,
+            "ubicacion": ubicacion_accidente
+        }
+
     # Respuesta final
     return {
         "status": f"Acción '{accion}' ejecutada",
@@ -164,8 +185,12 @@ async def responder(req: PromptRequest):
         "calle": calle
     }
 
-
-
+async def limpiar_accidente_automatico(duracion_minutos: int, ubicacion: str):
+    await asyncio.sleep(duracion_minutos * 60)  # Convertir a segundos
+    await notificar_todos({
+        "accion": "limpiar_accidente", 
+        "ubicacion": ubicacion
+    })
 
 #-----Conexion Websocket-----
 
