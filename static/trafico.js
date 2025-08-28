@@ -824,7 +824,7 @@ function moverAutos(delta) {
     // Verificar semáforos
     semaforos.forEach((semaforo) => {
       const dist = car.position.distanceTo(semaforo.position);
-      if (dist < 3 && semaforo.userData.state === "red") detener = true;
+      if (dist < 12 && semaforo.userData.state === "red") detener = true;
     });
 
     // Verificar si la calle actual está bloqueada (USANDO EL NUEVO SISTEMA)
