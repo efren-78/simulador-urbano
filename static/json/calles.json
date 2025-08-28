@@ -4,72 +4,112 @@
       "nodoInicio": "N1",
       "nodoFin": "N2",
       "puntos": [
-        { "x": -150, "y": -80 },
-        { "x": -80, "y": -80 }
+        { "x": -150, "y": -100 },
+        { "x": -50, "y": -100 }
       ]
     },
     "SanIgnacio": {
-      "nodoInicio": "N2",  
+      "nodoInicio": "N2",
       "nodoFin": "N3",
       "puntos": [
-        { "x": -70, "y": -70 },
-        { "x": -70, "y": -20 }
+        { "x": -50, "y": -100 },
+        { "x": -50, "y": -50 }
       ]
     },
     "SanAntonio": {
-      "nodoInicio": "N3",  
+      "nodoInicio": "N3",
       "nodoFin": "N4",
       "puntos": [
-        { "x": -60, "y": -10 },
-        { "x": 10, "y": -10 }
+        { "x": -50, "y": -50 },
+        { "x": 50, "y": -50 }
       ]
     },
     "SanIsaias": {
       "nodoInicio": "N4",
       "nodoFin": "N5",
       "puntos": [
-        { "x": 20, "y": -20 },
-        { "x": 20, "y": -70 }
+        { "x": 50, "y": -50 },
+        { "x": 50, "y": -100 }
       ]
     },
     "SanEfren": {
-      "nodoInicio": "N5", 
+      "nodoInicio": "N5",
       "nodoFin": "N6",
       "puntos": [
-        { "x": 30, "y": -80 },
-        { "x": 120, "y": -80 }
+        { "x": 50, "y": -100 },
+        { "x": 150, "y": -100 }
       ]
     },
     "SanBere": {
-      "nodoInicio": "N3", 
+      "nodoInicio": "N3",
       "nodoFin": "N7",
       "puntos": [
-        { "x": -70, "y": 0 },
-        { "x": -70, "y": 30 }
+        { "x": -50, "y": -50 },
+        { "x": -50, "y": 50 }
       ]
     },
     "SanAura": {
-      "nodoInicio": "N7",  
+      "nodoInicio": "N7",
       "nodoFin": "N8",
       "puntos": [
-        { "x": -60, "y": 40 },
-        { "x": 120, "y": 40 }
+        { "x": -50, "y": 50 },
+        { "x": 150, "y": 50 }
       ]
     },
     "SanAriel": {
-      "nodoInicio": "N8", 
+      "nodoInicio": "N8",
       "nodoFin": "N9",
       "puntos": [
-        { "x": 130, "y": -70 },
-        { "x": 130, "y": 30 }
+        { "x": 150, "y": 50 },
+        { "x": 150, "y": -100 }
       ]
     },
     "InterFran": {
-      "nodoInicio": "N2",  
-      "nodoFin": "N5",  
-      "puntos":[   
-        { "x": -80, "y": -80 },
-        { "x": -60, "y": -80 }
+      "nodoInicio": "N2",
+      "nodoFin": "N5",
+      "puntos": [
+        { "x": -50, "y": -100 },
+        { "x": 50, "y": -100 }
+      ]
+    },
+    "SanPedro": {
+      "nodoInicio": "N4",
+      "nodoFin": "N10",
+      "puntos": [
+        { "x": 50, "y": -50 },
+        { "x": 100, "y": -50 }
+      ]
+    },
+    "SanLucas": {
+      "nodoInicio": "N10",
+      "nodoFin": "N8",
+      "puntos": [
+        { "x": 100, "y": -50 },
+        { "x": 100, "y": 50 }
+      ]
+    },
+    "SanMateo": {
+      "nodoInicio": "N7",
+      "nodoFin": "N11",
+      "puntos": [
+        { "x": -50, "y": 50 },
+        { "x": -50, "y": 100 }
+      ]
+    },
+    "SanJudas": {
+      "nodoInicio": "N11",
+      "nodoFin": "N12",
+      "puntos": [
+        { "x": -50, "y": 100 },
+        { "x": 50, "y": 100 }
+      ]
+    },
+    "SanPablo": {
+      "nodoInicio": "N12",
+      "nodoFin": "N8",
+      "puntos": [
+        { "x": 50, "y": 100 },
+        { "x": 150, "y": 50 }
       ]
     }
   }

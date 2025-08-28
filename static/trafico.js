@@ -22,10 +22,6 @@ let nodos = {};
 let callesConNodos = {};
 let grafo = {};
 
-let mostrarNodosDebug = true; // Cambiar a true para ver nodos durante desarrollo
-let mostrarNombresCalles = true; // Para mostrar nombres de calles
-let mostrarIdsNodos = true; // Para mostrar u ocultar IDs de nodos
-
 // ----- CARGA DE RECURSOS -----
 //Intersecciones
 async function cargarNodos() {
@@ -142,12 +138,13 @@ function crearEscuela(posicion = { x: 0, z: 0 }, escala = 1) {
   crearVentana(3, 4, -3.05);
 
   // Posicionar y escalar el grupo completo
-  grupo.position.set(posicion.x, 0, posicion.z);
-  grupo.scale.set(3, 3, 3); // ESCALA UNIFORME
+  grupo.position.set(posicion.x+50, 0, posicion.z+50);
+  grupo.scale.set(4.5, 4.5, 4.5); // ESCALA UNIFORME
   scene.add(grupo);
 }
 
 //Semaforo simple
+//Corregir posicion, falta modelado 3d
 function crearSemaforo(position, initialState = "red") {
   const colores = {
     red: 0xff0000,
@@ -196,7 +193,6 @@ function crearSemaforo(position, initialState = "red") {
   semaforos.push(grupo);
 }
 
-//Auto
 function createCar(color) {
   const carGroup = new THREE.Group();
 
@@ -243,7 +239,6 @@ function createCar(color) {
 console.log("Datos de rutasAutos:", rutasAutos);
 console.log("Datos de calles:", calles);
 
-//Multiple autos
 function crearAutos(cantidad, velocidadBase) {
   const rutasKeys = Object.keys(rutasAutos);
 
@@ -442,22 +437,30 @@ function encontrarRutaAlternativa(nodoOrigen, nodoDestino, callesBloqueadas = []
   return null;
 }
 
-//Obstruccion en calles
-function crearBloqueo(scene, position, radio = 5) {
-  const geometry = new THREE.CircleGeometry(radio, 32);
-  const material = new THREE.MeshBasicMaterial({
-    color: 0xffaa00,
-    opacity: 0.5,
-    transparent: true,
-  });
-  const bloqueo = new THREE.Mesh(geometry, material);
-  bloqueo.rotation.x = -Math.PI / 2;
-  bloqueo.position.set(position.x, 0.01, position.z);
-  scene.add(bloqueo);
-
-  bloqueos.push({ position, radio });
-  bloqueoMeshes.push(bloqueo);
+// Eliminar el sistema de bloqueos circulares y usar solo calles bloqueadas
+function crearBloqueoEnCalle(nombreCalle) {
+  if (callesConNodos[nombreCalle]) {
+    callesConNodos[nombreCalle].estado = "cerrada";
+    actualizarVisualCalles();
+    console.log("Calle bloqueada:", nombreCalle);
+    return true;
+  }
+  return false;
 }
+
+function desbloquearCalle(nombreCalle) {
+  if (callesConNodos[nombreCalle]) {
+    callesConNodos[nombreCalle].estado = "abierta";
+    actualizarVisualCalles();
+    console.log("Calle desbloqueada:", nombreCalle);
+    return true;
+  }
+  return false;
+}
+
+let mostrarNodosDebug = true; // Cambiar a true para ver nodos durante desarrollo
+let mostrarNombresCalles = true; // Para mostrar nombres de calles
+let mostrarIdsNodos = true; // Para mostrar u ocultar IDs de nodos
 
 function dibujarCallesDesdeJSON() {
     // Eliminar las calles anteriores
@@ -719,7 +722,6 @@ function calcularVelocidadBase(nivel) {
 }
 
 // ----- Operaciones basicas -----
-//Iniciar simulacion
 function playSim() {
   if (!running) {
     running = true;
@@ -728,13 +730,11 @@ function playSim() {
   }
 }
 
-//Detener simulacion
 function stopSim() {
   running = false;
   cancelAnimationFrame(animationId); //Detiene simulacion
 }
 
-//Recargar simulacion
 function reloadSim() {
   stopSim();
   cars.forEach((car, i) => {
@@ -845,6 +845,29 @@ function cambiarRutaAuto(car) {
   console.log("Ruta cambiada a:", rutaNodos);
 }
 
+// -----Procesamiento de prompteo-----
+async function enviarPrompt() {
+  const inputValue = document.getElementById("instruction-input").value.trim();
+  if (!inputValue) return console.warn("No hay instrucción para enviar.");
+
+  try {
+    const response = await fetch("http://localhost:8000/nlp", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt: inputValue, max_tokens: 150 }),
+    });
+    const data = await response.json();
+    console.log("Respuesta backend NLP:", data);
+
+    const accion = data.status?.toLowerCase() || "";
+    if (accion.includes("start")) playSim();
+    else if (accion.includes("stop")) stopSim();
+    else if (accion.includes("reload")) reloadSim();
+  } catch (error) {
+    console.error("Error al enviar prompt:", error);
+  }
+}
+
 // ----- Inicializacion -----
 async function init() {
   //Cargar datos
@@ -943,7 +966,6 @@ window.addEventListener("DOMContentLoaded", () => {
   });
 });
 
-// ----- Vistas de camara -----
 function updateCamera() {
   switch (currentView) {
     case "top": // Vista cenital con zoom y movimiento
@@ -982,30 +1004,6 @@ function siguienteAuto() {
     console.log("Siguiendo auto:", followIndex);
   }
 }
-
-// -----Procesamiento de prompteo-----
-async function enviarPrompt() {
-  const inputValue = document.getElementById("instruction-input").value.trim();
-  if (!inputValue) return console.warn("No hay instrucción para enviar.");
-
-  try {
-    const response = await fetch("http://localhost:8000/nlp", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prompt: inputValue, max_tokens: 150 }),
-    });
-    const data = await response.json();
-    console.log("Respuesta backend NLP:", data);
-
-    const accion = data.status?.toLowerCase() || "";
-    if (accion.includes("start")) playSim();
-    else if (accion.includes("stop")) stopSim();
-    else if (accion.includes("reload")) reloadSim();
-  } catch (error) {
-    console.error("Error al enviar prompt:", error);
-  }
-}
-
 // ----- Eventos -----
 document.getElementById("play-button").addEventListener("click", () => {
   fetch("http://localhost:8000/start")
@@ -1036,9 +1034,17 @@ document.getElementById("remove-bloqueo").addEventListener("click", () => {
 });
 
 document.getElementById("clear-bloqueos").addEventListener("click", () => {
+  // Desbloquear todas las calles
+  for (const calleNombre in callesConNodos) {
+    callesConNodos[calleNombre].estado = "abierta";
+  }
+  
+  // Limpiar bloqueos circulares (si decides mantenerlos)
   bloqueos.length = 0;
   bloqueoMeshes.forEach((mesh) => scene.remove(mesh));
   bloqueoMeshes.length = 0;
+  
+  actualizarVisualCalles();
   console.log("Todos los bloqueos eliminados");
 });
 
@@ -1055,42 +1061,47 @@ document.getElementById("mapaCanvas").addEventListener("click", (event) => {
   const intersects = raycaster.intersectObjects(scene.children, true);
 
   if (modoAgregarBloqueo) {
-    // Agregar bloqueo solo en el suelo
-    const suelo = intersects.find(
-      (obj) => obj.object.userData.type === "ground"
+    // Buscar si se clickeó una calle
+    const calleHit = intersects.find(obj => 
+      obj.object.userData && obj.object.userData.tipo === "calle"
     );
 
-    if (suelo) {
-      const punto = suelo.point;
-      crearBloqueo(scene, { x: punto.x, z: punto.z }, 6);
-      console.log(
-        `Bloqueo agregado en X=${punto.x.toFixed(2)}, Z=${punto.z.toFixed(2)}`
-      );
+    if (calleHit) {
+      const nombreCalle = calleHit.object.userData.nombre;
+      crearBloqueoEnCalle(nombreCalle);
+      
+      // También enviar al backend si es necesario
+      fetch("http://localhost:8000/bloquear-calle", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ calle: nombreCalle })
+      });
     }
     modoAgregarBloqueo = false;
   }
 
   if (modoEliminarBloqueo) {
-    // Eliminar si se clickea un bloqueo
-    const bloqueoHit = intersects.find((obj) =>
-      bloqueoMeshes.includes(obj.object)
+    // Similar para desbloquear
+    const calleHit = intersects.find(obj => 
+      obj.object.userData && obj.object.userData.tipo === "calle"
     );
 
-    if (bloqueoHit) {
-      const index = bloqueoMeshes.indexOf(bloqueoHit.object);
-      if (index !== -1) {
-        scene.remove(bloqueoMeshes[index]);
-        bloqueoMeshes.splice(index, 1);
-        bloqueos.splice(index, 1);
-        console.log(`Bloqueo eliminado en índice ${index}`);
-      }
+    if (calleHit) {
+      const nombreCalle = calleHit.object.userData.nombre;
+      desbloquearCalle(nombreCalle);
+      
+      fetch("http://localhost:8000/desbloquear-calle", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ calle: nombreCalle })
+      });
     }
     modoEliminarBloqueo = false;
   }
 });
 
-document.getElementById("button-main").addEventListener("click", enviarPrompt); //index2.html
-document.getElementById("send-button").addEventListener("click", enviarPrompt); //index.html
+//document.getElementById("button-main").addEventListener("click", enviarPrompt);
+document.getElementById("send-button").addEventListener("click", enviarPrompt);
 
 // ----- Conexion websocket -----
 async function sincronizarEstado() {
@@ -1227,21 +1238,6 @@ document
   .addEventListener("click", () => moverCamara(0, 10));
 
 // ---------------------- BLOQUEO / DESBLOQUEO ----------------------
-function bloquearCalle(nombreCalle) {
-  if (callesConNodos[nombreCalle]) {
-    callesConNodos[nombreCalle].estado = "cerrada";
-    actualizarVisualCalles();
-    console.log("Calle bloqueada:", nombreCalle);
-  }
-}
-
-function desbloquearCalle(nombreCalle) {
-  if (callesConNodos[nombreCalle]) {
-    callesConNodos[nombreCalle].estado = "abierta";
-    actualizarVisualCalles();
-    console.log("Calle desbloqueada:", nombreCalle);
-  }
-}
 
 function actualizarVisualCalles() {
   callesMeshes.forEach((mesh) => {
