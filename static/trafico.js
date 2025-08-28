@@ -44,6 +44,40 @@ const efectosAccidente = {
     }
 };
 
+let climaActual = {
+    tipo: "soleado",
+    intensidad: "leve",
+    duracion: 0
+};
+
+const efectosClima = {
+    soleado: { 
+        colorAmbiente: 0xffffff, 
+        intensidadLuz: 1.0,
+        visibilidad: 1.0,
+        factorVelocidad: 1.0
+    },
+    lluvia: {
+        leve: { colorAmbiente: 0xcccccc, intensidadLuz: 0.8, visibilidad: 0.9, factorVelocidad: 0.9 },
+        moderado: { colorAmbiente: 0xaaaaaa, intensidadLuz: 0.6, visibilidad: 0.7, factorVelocidad: 0.8 },
+        fuerte: { colorAmbiente: 0x888888, intensidadLuz: 0.4, visibilidad: 0.5, factorVelocidad: 0.7 }
+    },
+    niebla: {
+        leve: { colorAmbiente: 0xdddddd, intensidadLuz: 0.7, visibilidad: 0.8, factorVelocidad: 0.95 },
+        moderado: { colorAmbiente: 0xbbbbbb, intensidadLuz: 0.5, visibilidad: 0.6, factorVelocidad: 0.9 },
+        fuerte: { colorAmbiente: 0x999999, intensidadLuz: 0.3, visibilidad: 0.4, factorVelocidad: 0.85 }
+    },
+    noche: {
+        leve: { colorAmbiente: 0x444444, intensidadLuz: 0.3, visibilidad: 0.6, factorVelocidad: 0.9 },
+        moderado: { colorAmbiente: 0x333333, intensidadLuz: 0.2, visibilidad: 0.4, factorVelocidad: 0.8 },
+        fuerte: { colorAmbiente: 0x222222, intensidadLuz: 0.1, visibilidad: 0.3, factorVelocidad: 0.7 }
+    }
+};
+
+// Efectos de partículas
+let sistemaParticulasLluvia = null;
+let sistemaParticulasNiebla = null;
+
 // ----- CARGA DE RECURSOS -----
 //Intersecciones
 async function cargarNodos() {
@@ -665,6 +699,7 @@ function animate() {
   actualizarSemaforos();
   moverAutos(delta);
   animarAccidentes();
+  animarEfectosClima();
 
   updateCamera();
 
@@ -1222,6 +1257,9 @@ socket.onmessage = ({ data }) => {
   else if (msg.accion === "limpiar_accidente") {
       limpiarAccidente(msg.ubicacion);
   }
+  else if (msg.accion === "clima") {
+      cambiarClima(msg.tipo, msg.intensidad, msg.duracion);
+  }
 };
 
 // Ajustar cantidad de autos
@@ -1462,4 +1500,175 @@ function animarAccidentes() {
             limpiarAccidente(accidente.ubicacion);
         }
     });
+}
+
+//----- CLIMA -----
+function cambiarClima(tipo, intensidad, duracionMinutos) {
+    // Detener efectos anteriores
+    detenerEfectosClima();
+    
+    // Actualizar estado
+    climaActual = { tipo, intensidad, duracion: duracionMinutos };
+    
+    // Aplicar efectos visuales
+    aplicarEfectosVisualesClima(tipo, intensidad);
+    
+    // Aplicar efectos de gameplay
+    aplicarEfectosGameplayClima(tipo, intensidad);
+    
+    // Crear efectos de partículas
+    if (tipo === "lluvia") {
+        crearLluvia(intensidad);
+    } else if (tipo === "niebla") {
+        crearNiebla(intensidad);
+    }
+    
+    mostrarNotificacion(`Clima cambiado a: ${tipo} ${intensidad}`);
+    
+    // Programar restauración si no es soleado
+    if (tipo !== "soleado" && duracionMinutos > 0) {
+        setTimeout(() => {
+            cambiarClima("soleado", "leve", 0);
+        }, duracionMinutos * 60000);
+    }
+}
+
+function aplicarEfectosVisualesClima(tipo, intensidad) {
+    const efecto = efectosClima[tipo][intensidad] || efectosClima[tipo].leve;
+    
+    // Cambiar ambiente
+    scene.background = new THREE.Color(efecto.colorAmbiente);
+    
+    // Ajustar luz
+    if (scene.light) {
+        scene.light.intensity = efecto.intensidadLuz;
+    }
+    
+    // Añadir fog/niebla
+    if (tipo === "niebla" || tipo === "lluvia") {
+        scene.fog = new THREE.FogExp2(efecto.colorAmbiente, 0.01 * (1.5 - efecto.visibilidad));
+    } else {
+        scene.fog = null;
+    }
+    
+    // Efecto de noche
+    if (tipo === "noche") {
+        // Activar luces de calles y autos
+        activarIluminacionNocturna();
+    } else {
+        desactivarIluminacionNocturna();
+    }
+}
+
+function aplicarEfectosGameplayClima(tipo, intensidad) {
+    const efecto = efectosClima[tipo][intensidad] || efectosClima[tipo].leve;
+    
+    // Ajustar velocidades de autos
+    carSpeeds = carSpeeds.map(originalSpeed => 
+        originalSpeed * efecto.factorVelocidad
+    );
+    
+    // Reducir distancia de visión para semáforos
+    if (tipo === "niebla" || tipo === "lluvia") {
+        // Los autos detectan semáforos desde más cerca
+    }
+}
+
+function crearLluvia(intensidad) {
+    const count = intensidad === "leve" ? 500 : intensidad === "moderado" ? 1000 : 2000;
+    
+    const geometry = new THREE.BufferGeometry();
+    const positions = new Float32Array(count * 3);
+    
+    for (let i = 0; i < count * 3; i += 3) {
+        positions[i] = (Math.random() - 0.5) * 200;
+        positions[i + 1] = Math.random() * 50 + 30;
+        positions[i + 2] = (Math.random() - 0.5) * 200;
+    }
+    
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    
+    const material = new THREE.PointsMaterial({
+        color: 0x8888ff,
+        size: intensidad === "leve" ? 0.1 : intensidad === "moderado" ? 0.15 : 0.2,
+        transparent: true,
+        opacity: 0.6
+    });
+    
+    sistemaParticulasLluvia = new THREE.Points(geometry, material);
+    scene.add(sistemaParticulasLluvia);
+    sistemaParticulasLluvia.userData.velocity = intensidad === "leve" ? 0.2 : intensidad === "moderado" ? 0.4 : 0.6;
+}
+
+function crearNiebla(intensidad) {
+    const density = intensidad === "leve" ? 50 : intensidad === "moderado" ? 100 : 200;
+    
+    const geometry = new THREE.BufferGeometry();
+    const positions = new Float32Array(density * 3);
+    
+    for (let i = 0; i < density * 3; i += 3) {
+        positions[i] = (Math.random() - 0.5) * 300;
+        positions[i + 1] = Math.random() * 20 + 5;
+        positions[i + 2] = (Math.random() - 0.5) * 300;
+    }
+    
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    
+    const material = new THREE.PointsMaterial({
+        color: 0xdddddd,
+        size: intensidad === "leve" ? 2 : intensidad === "moderado" ? 3 : 4,
+        transparent: true,
+        opacity: 0.3
+    });
+    
+    sistemaParticulasNiebla = new THREE.Points(geometry, material);
+    scene.add(sistemaParticulasNiebla);
+}
+
+function animarEfectosClima() {
+    // Animación de lluvia
+    if (sistemaParticulasLluvia) {
+        const positions = sistemaParticulasLluvia.geometry.attributes.position.array;
+        const velocity = sistemaParticulasLluvia.userData.velocity;
+        
+        for (let i = 1; i < positions.length; i += 3) {
+            positions[i] -= velocity;
+            if (positions[i] < 0) {
+                positions[i] = 30 + Math.random() * 20;
+                positions[i - 1] = (Math.random() - 0.5) * 200;
+                positions[i + 1] = (Math.random() - 0.5) * 200;
+            }
+        }
+        
+        sistemaParticulasLluvia.geometry.attributes.position.needsUpdate = true;
+    }
+    
+    // Animación de niebla
+    if (sistemaParticulasNiebla) {
+        sistemaParticulasNiebla.rotation.y += 0.001;
+    }
+}
+
+function detenerEfectosClima() {
+    if (sistemaParticulasLluvia) {
+        scene.remove(sistemaParticulasLluvia);
+        sistemaParticulasLluvia = null;
+    }
+    if (sistemaParticulasNiebla) {
+        scene.remove(sistemaParticulasNiebla);
+        sistemaParticulasNiebla = null;
+    }
+    
+    scene.fog = null;
+}
+
+function activarIluminacionNocturna() {
+    // Activar luces de calles, semáforos, y faros de autos
+    semaforos.forEach(semaforo => {
+        // Intensificar emisión de luz en semáforos
+    });
+}
+
+function desactivarIluminacionNocturna() {
+    // Restaurar valores normales
 }

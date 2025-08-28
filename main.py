@@ -176,6 +176,29 @@ async def responder(req: PromptRequest):
             "ubicacion": ubicacion_accidente
         }
 
+    elif accion == "clima":
+        tipo = params.get("tipo_clima", "soleado")
+        intensidad = params.get("intensidad_clima", "leve")
+        duracion = params.get("duracion_clima", 30)
+        
+        await notificar_todos({
+            "accion": "clima",
+            "tipo": tipo,
+            "intensidad": intensidad,
+            "duracion": duracion
+        })
+        
+        # Programar retorno a clima normal si no es soleado
+        if tipo != "soleado":
+            asyncio.create_task(restaurar_clima_automatico(duracion))
+        
+        return {
+            "status": f"Clima {tipo} ({intensidad}) establecido por {duracion}min",
+            "tipo_clima": tipo,
+            "intensidad_clima": intensidad,
+            "duracion_clima": duracion
+        }
+
     # Respuesta final
     return {
         "status": f"Acción '{accion}' ejecutada",
@@ -192,6 +215,16 @@ async def limpiar_accidente_automatico(duracion_minutos: int, ubicacion: str):
         "ubicacion": ubicacion
     })
 
+
+async def restaurar_clima_automatico(duracion_minutos: int):
+    await asyncio.sleep(duracion_minutos * 60)
+    await notificar_todos({
+        "accion": "clima",
+        "tipo": "soleado",
+        "intensidad": "leve",
+        "duracion": 0
+    })
+    
 #-----Conexion Websocket-----
 
 #Endpoint que realiza la conexion

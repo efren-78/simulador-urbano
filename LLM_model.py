@@ -11,13 +11,6 @@ load_dotenv()
 # Inicializa cliente OpenAI
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-#Genera respuesta NLP para la simulación de tráfico.   
-# Devuelve SIEMPRE un diccionario con:
-# {"accion": str, 
-# "numCars": int, 
-# "trafico": str, 
-# "semaforo": str | None}
-
 def generar_respuesta(prompt: str, max_tokens: int = 150) -> dict:
     # Valores por defecto
     respuesta_fallback = {
@@ -28,7 +21,10 @@ def generar_respuesta(prompt: str, max_tokens: int = 150) -> dict:
         "calle": None,
         "tipo_accidente": None, 
         "duracion_accidente": None,
-        "ubicacion_accidente": None
+        "ubicacion_accidente": None,
+        "tipo_clima": None,
+        "intensidad_clima": None,
+        "duracion_clima": None
     }
 
     try:
@@ -43,19 +39,26 @@ def generar_respuesta(prompt: str, max_tokens: int = 150) -> dict:
                         "y devolver SIEMPRE un JSON puro y válido. "
                         "El JSON debe incluir: "
                         "\"accion\" (uno de: \"start\", \"stop\", \"reload\", \"ajustar\", "
-                        "\"bloquear\", \"desbloquear\", \"accidente\", \"none\"), " 
+                        "\"bloquear\", \"desbloquear\", \"accidente\", \"clima\", \"none\"), "  
                         "\"numCars\" (entero), "
                         "\"trafico\" (\"alto\", \"moderado\" o \"bajo\"), "
                         "opcionalmente \"semaforo\" (\"verde\", \"rojo\", \"amarillo\"), "
                         "opcionalmente \"calle\" (nombre de la calle), "
                         "opcionalmente \"tipo_accidente\" (\"leve\", \"moderado\", \"grave\"), " 
                         "opcionalmente \"duracion_accidente\" (entero, minutos), " 
-                        "opcionalmente \"ubicacion_accidente\" (string). "
+                        "opcionalmente \"ubicacion_accidente\" (string), "
+                        "opcionalmente \"tipo_clima\" (\"soleado\", \"lluvia\", \"niebla\", \"noche\"), " 
+                        "opcionalmente \"intensidad_clima\" (\"leve\", \"moderado\", \"fuerte\"), " 
+                        "opcionalmente \"duracion_clima\" (entero, minutos). "  
 
-                        "EJEMPLOS: "
+                        "EJEMPLOS:\n"
                         "\"Simula accidente leve en Avenida Principal por 10 minutos\" → "
-                        "{\"accion\": \"accidente\", \"tipo_accidente\": \"leve\", \"ubicacion_accidente\": \"Avenida Principal\", \"duracion_accidente\": 10}"
-                        
+                        "{\"accion\": \"accidente\", \"tipo_accidente\": \"leve\", \"ubicacion_accidente\": \"Avenida Principal\", \"duracion_accidente\": 10}\n"
+                        "\"Lluvia moderada por 20 minutos\" → "
+                        "{\"accion\": \"clima\", \"tipo_clima\": \"lluvia\", \"intensidad_clima\": \"moderado\", \"duracion_clima\": 20}\n"
+                        "\"Niebla densa\" → "
+                        "{\"accion\": \"clima\", \"tipo_clima\": \"niebla\", \"intensidad_clima\": \"fuerte\", \"duracion_clima\": 30}\n"
+
                         "No devuelvas bloques de código (```), "
                         "ni texto adicional, solo JSON válido."
                     )
@@ -64,7 +67,7 @@ def generar_respuesta(prompt: str, max_tokens: int = 150) -> dict:
             ],
             max_tokens=max_tokens,
             temperature=0.1,
-            response_format={"type": "json_object"}, 
+            response_format={"type": "json_object"},
             timeout=10
         )
 
@@ -86,9 +89,10 @@ def generar_respuesta(prompt: str, max_tokens: int = 150) -> dict:
 
         # Validación básica
         accion = str(params.get("accion", "none")).lower()
-        if accion not in ["start", "stop", "reload", "ajustar", "bloquear", "desbloquear", "accidente", "none"]:
+        if accion not in ["start", "stop", "reload", "ajustar", "bloquear", "desbloquear", "accidente", "clima", "none"]:  # ✅ Añadir "clima"
             accion = "none"
 
+        # ✅ PRIMERO accidentes
         if accion == "accidente":
             tipo = params.get("tipo_accidente", "leve")
             if tipo not in ["leve", "moderado", "grave"]:
@@ -96,7 +100,7 @@ def generar_respuesta(prompt: str, max_tokens: int = 150) -> dict:
             
             try:
                 duracion = int(params.get("duracion_accidente", 15))
-                duracion = max(5, min(120, duracion))  # Limitar 5-120 minutos
+                duracion = max(5, min(120, duracion))
             except (ValueError, TypeError):
                 duracion = 15
             
@@ -104,15 +108,49 @@ def generar_respuesta(prompt: str, max_tokens: int = 150) -> dict:
             
             return {
                 "accion": "accidente",
-                "numCars": 10,  # Valores por defecto para accidentes
+                "numCars": 10,
                 "trafico": "moderado",
                 "semaforo": None,
                 "calle": None,
                 "tipo_accidente": tipo,
                 "duracion_accidente": duracion,
-                "ubicacion_accidente": ubicacion
+                "ubicacion_accidente": ubicacion,
+                "tipo_clima": None,          
+                "intensidad_clima": None,  
+                "duracion_clima": None      
             }
 
+        # ✅ LUEGO clima
+        if accion == "clima":
+            tipo = params.get("tipo_clima", "soleado")
+            if tipo not in ["soleado", "lluvia", "niebla", "noche"]:
+                tipo = "soleado"
+            
+            intensidad = params.get("intensidad_clima", "leve")
+            if intensidad not in ["leve", "moderado", "fuerte"]:
+                intensidad = "leve"
+            
+            try:
+                duracion = int(params.get("duracion_clima", 30))
+                duracion = max(5, min(240, duracion))
+            except (ValueError, TypeError):
+                duracion = 30
+            
+            return {
+                "accion": "clima",
+                "numCars": 10,
+                "trafico": "moderado",
+                "semaforo": None,
+                "calle": None,
+                "tipo_accidente": None,    
+                "duracion_accidente": None,  
+                "ubicacion_accidente": None,  
+                "tipo_clima": tipo,
+                "intensidad_clima": intensidad,
+                "duracion_clima": duracion
+            }
+
+        # ✅ FINALMENTE otros comandos
         try:
             numCars = int(params.get("numCars", 10))
         except ValueError:
@@ -136,9 +174,12 @@ def generar_respuesta(prompt: str, max_tokens: int = 150) -> dict:
             "trafico": trafico,
             "semaforo": semaforo,
             "calle": calle,
-            "tipo_accidente": None, 
+            "tipo_accidente": None,
             "duracion_accidente": None,
-            "ubicacion_accidente": None
+            "ubicacion_accidente": None,
+            "tipo_clima": None,        
+            "intensidad_clima": None,   
+            "duracion_clima": None       
         }
 
     except Exception as e:
