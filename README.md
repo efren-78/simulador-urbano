@@ -11,9 +11,9 @@ Con NeuroOctopus puedes controlar:
 - 🌧️ **Condiciones Climáticas:** modificar el clima (lluvia, noche, niebla, soleado.).
 - 👁️ **Vista y Perspectiva:** cambiar ángulos de cámara, vistas aéreas y perspectivas de visualización.
 - 💬 **Chatbot Integrado** ayuda a entender y utilizar el simulador mediante explicaciones clara y asistencia contextual:
-  *Explica el funcionamiento de comandos.
-  *Guiarte en la configuración inicial del simulador.
-  *Responder preguntas sobre eventos, condiciones climáticas, semáforos.
+  1. Explica el funcionamiento de comandos.
+  2. Guiarte en la configuración inicial del simulador.
+  3. Responder preguntas sobre eventos, condiciones climáticas, semáforos.
   
 ---
 
