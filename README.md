@@ -10,8 +10,11 @@ Con NeuroOctopus puedes controlar:
 - 🚨 **Accidentes:** simular colisiones vehiculares y gestionar sus consecuencias.
 - 🌧️ **Condiciones Climáticas:** modificar el clima (lluvia, noche, niebla, soleado.).
 - 👁️ **Vista y Perspectiva:** cambiar ángulos de cámara, vistas aéreas y perspectivas de visualización.
-
-
+- 💬 **Chatbot Integrado** ayuda a entender y utilizar el simulador mediante explicaciones clara y asistencia contextual:
+  *Explica el funcionamiento de comandos.
+  *Guiarte en la configuración inicial del simulador.
+  *Responder preguntas sobre eventos, condiciones climáticas, semáforos.
+  
 ---
 
 ## Requisitos
