@@ -15,21 +15,35 @@ Con NeuroOctopus puedes controlar:
 ---
 
 ## Requisitos
+### 🔧 Python
+Instala las dependencias necesarias con:
+
+-   pip install -r requirements.txt
+
+Si tienes problemas, intenta con:
+
+-  python -m pip install -r requirements.txt
 
 
-Instala las dependencias necesarias:
+## 🚀 Ejecución
+Para iniciar el servidor FastAPI:
 
-pip install -r requirements.txt
+-  uvicorn main:app --reload
 
+## 🔐 Configuración
+Asegúrate de tener un archivo .env en la raíz del proyecto con tu clave de API de OpenAI:
 
-Y si no funciona intenta con:
-- python -m pip install -r requirements.txt
-
-
-Para correr el codigo inicializa el FastApi con el comando:
-- uvicorn main:app  --reload
+OPENAI_API_KEY="sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 
 
-### Recordatorio
-Para que funcione se debe tener en un archivo .env la declaracion de nuestra ApiKey:
-- OPENAI_API_KEY="sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+### 📚 Documentación
+Una guia de comandos disponibles en lenguaje natural para controlar el simulador: 
+
+*Agrega 10 autos
+*Lluvia intensa casua accidente en SanAura
+*Vista siguiendo auto
+*Lluvia intensa por 5 minutos
+*stop
+*play
+
+
