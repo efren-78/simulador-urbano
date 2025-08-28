@@ -1211,6 +1211,7 @@ document.getElementById("mapaCanvas").addEventListener("click", (event) => {
   }
 });
 
+//Aqui corregir
 //document.getElementById("button-main").addEventListener("click", enviarPrompt);
 document.getElementById("send-button").addEventListener("click", enviarPrompt);
 
