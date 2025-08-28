@@ -267,7 +267,7 @@ function crearEscuela(posicion = { x: 0, z: 0 }, escala = 1) {
 
 //Semaforo simple
 //Corregir posicion, falta modelado 3d
-function crearSemaforo(position, initialState = "red") {
+function crearSemaforo(position, initialState = "red", offset = 0) {
   const colores = {
     red: 0xff0000,
     yellow: 0xffff00,
@@ -309,7 +309,9 @@ function crearSemaforo(position, initialState = "red") {
 
   grupo.position.set(position.x, 0, position.z);
   grupo.scale.set(5, 5, 5); // ⬅️ Aumenta el tamaño 5 veces
+  grupo.userData = grupo.userData || {}; // si no existe, lo crea
   grupo.userData.state = initialState;
+  grupo.userData.offset = offset; // ahora sí, seguro
 
   scene.add(grupo);
   semaforos.push(grupo);
@@ -731,7 +733,7 @@ function dibujarCallesDesdeJSON() {
 
       const geometryNodo = new THREE.PlaneGeometry(sizeNodo, sizeNodo);
       const materialNodo = new THREE.MeshBasicMaterial({
-        color: 0x333333,
+        color: 000000,
         side: THREE.DoubleSide,
       });
 
@@ -789,11 +791,6 @@ function animate() {
 
 // -----Funcionalidad de objetos-----
 function actualizarSemaforos() {
-  const time = performance.now() * 0.001;
-  let state = "red";
-  if (time % 10 < 4) state = "green";
-  else if (time % 10 < 5) state = "yellow";
-
   const colores = {
     red: 0xff0000,
     yellow: 0xffff00,
@@ -801,8 +798,16 @@ function actualizarSemaforos() {
   };
 
   semaforos.forEach((semaforo) => {
-    const estados = ["red", "yellow", "green"];
-    estados.forEach((color) => {
+    // ✅ usar el offset propio de cada semáforo
+    const offset = semaforo.userData?.offset || 0;
+    const time = performance.now() * 0.001 + offset;
+
+    let state = "red";
+    if (time % 10 < 4) state = "green";
+    else if (time % 10 < 5) state = "yellow";
+
+    // actualizar luces
+    ["red", "yellow", "green"].forEach((color) => {
       const luz = semaforo.getObjectByName(color);
       if (luz && luz.material && luz.material.emissive) {
         luz.material.emissive.setHex(
@@ -810,6 +815,7 @@ function actualizarSemaforos() {
         );
       }
     });
+
     semaforo.userData.state = state;
   });
 }
@@ -1091,12 +1097,16 @@ async function init() {
 
   dibujarCallesDesdeJSON();
 
-  crearSemaforo({ x: -40, z: 42 }, "green");
-  crearSemaforo({ x: 41, z: -94 }, "red");
-  crearSemaforo({ x: -41, z: -94 }, "red");
-  crearSemaforo({ x: -41, z: -55 }, "yellow");
-  crearSemaforo({ x: 41, z: -55 }, "green");
-  crearSemaforo({ x: 45, z: 90 }, "yellow");
+  // Manual
+  crearSemaforo({ x: -40, z: 42 }, "green", 0);
+  crearSemaforo({ x: 41, z: -94 }, "red", 3);
+  crearSemaforo({ x: -41, z: -94 }, "red", 6);
+  crearSemaforo({ x: -41, z: -55 }, "yellow", 1.5);
+  crearSemaforo({ x: 41, z: -55 }, "green", 4);
+  crearSemaforo({ x: 45, z: 90 }, "yellow", 7);
+
+  // O aleatorio
+  crearSemaforo({ x: -40, z: 42 }, "green", Math.random() * 10);
 
   crearEscuela({ x: -40, z: -40 });
 
@@ -1373,9 +1383,25 @@ socket.onmessage = ({ data }) => {
     cambiarClima(msg.tipo, msg.intensidad, msg.duracion);
   } else if (msg.accion === "vista") {
     cambiarVista(msg.tipo, msg.auto_id, msg.ubicacion);
+
+    // 🚦 Nuevo: cambio de semáforo desde NLP
+  } else if (msg.accion === "cambiar_semaforo" && msg.estado) {
+    semaforos.forEach((semaforo) => {
+      semaforo.userData.state = msg.estado;
+
+      const colores = { red: 0xff0000, yellow: 0xffff00, green: 0x00ff00 };
+      ["red", "yellow", "green"].forEach((color) => {
+        const luz = semaforo.getObjectByName(color);
+        if (luz && luz.material && luz.material.emissive) {
+          luz.material.emissive.setHex(
+            color === msg.estado ? colores[color] : 0x000000
+          );
+        }
+      });
+    });
+    mostrarNotificacion(`Semáforo cambiado a ${msg.estado}`);
   }
 };
-
 // Ajustar cantidad de autos
 function ajustarCantidadAutos(cantidad) {
   console.log("Ajustando cantidad de autos a:", cantidad);
