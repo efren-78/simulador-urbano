@@ -211,7 +211,7 @@ function createCar(color) {
   roof.position.set(0, 2, 0);
   roof.castShadow = true;
   carGroup.add(roof);
-
+  //bien
   // Ruedas
   const wheelGeometry = new THREE.CylinderGeometry(0.4, 0.4, 0.3, 16);
   const wheelMaterial = new THREE.MeshLambertMaterial({ color: 0x222222 });
