@@ -308,10 +308,10 @@ function crearSemaforo(position, initialState = "red", offset = 0) {
   });
 
   grupo.position.set(position.x, 0, position.z);
-  grupo.scale.set(5, 5, 5); // ⬅️ Aumenta el tamaño 5 veces
-  grupo.userData = grupo.userData || {}; // si no existe, lo crea
+  grupo.scale.set(5, 5, 5); // aumenta el tamaño
+  grupo.userData = grupo.userData || {};
   grupo.userData.state = initialState;
-  grupo.userData.offset = offset; // ahora sí, seguro
+  grupo.userData.offset = offset; // para el desfase
 
   scene.add(grupo);
   semaforos.push(grupo);
@@ -1097,16 +1097,12 @@ async function init() {
 
   dibujarCallesDesdeJSON();
 
-  // Manual
   crearSemaforo({ x: -40, z: 42 }, "green", 0);
   crearSemaforo({ x: 41, z: -94 }, "red", 3);
   crearSemaforo({ x: -41, z: -94 }, "red", 6);
   crearSemaforo({ x: -41, z: -55 }, "yellow", 1.5);
   crearSemaforo({ x: 41, z: -55 }, "green", 4);
   crearSemaforo({ x: 45, z: 90 }, "yellow", 7);
-
-  // O aleatorio
-  crearSemaforo({ x: -40, z: 42 }, "green", Math.random() * 10);
 
   crearEscuela({ x: -40, z: -40 });
 
