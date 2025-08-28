@@ -22,6 +22,10 @@ let nodos = {};
 let callesConNodos = {};
 let grafo = {};
 
+let mostrarNodosDebug = true; // Cambiar a true para ver nodos durante desarrollo
+let mostrarNombresCalles = true; // Para mostrar nombres de calles
+let mostrarIdsNodos = true; // Para mostrar u ocultar IDs de nodos
+
 // ----- CARGA DE RECURSOS -----
 //Intersecciones
 async function cargarNodos() {
@@ -144,7 +148,6 @@ function crearEscuela(posicion = { x: 0, z: 0 }, escala = 1) {
 }
 
 //Semaforo simple
-//Corregir posicion, falta modelado 3d
 function crearSemaforo(position, initialState = "red") {
   const colores = {
     red: 0xff0000,
@@ -193,6 +196,7 @@ function crearSemaforo(position, initialState = "red") {
   semaforos.push(grupo);
 }
 
+//Auto
 function createCar(color) {
   const carGroup = new THREE.Group();
 
@@ -239,6 +243,7 @@ function createCar(color) {
 console.log("Datos de rutasAutos:", rutasAutos);
 console.log("Datos de calles:", calles);
 
+//Multiple autos
 function crearAutos(cantidad, velocidadBase) {
   const rutasKeys = Object.keys(rutasAutos);
 
@@ -453,10 +458,6 @@ function crearBloqueo(scene, position, radio = 5) {
   bloqueos.push({ position, radio });
   bloqueoMeshes.push(bloqueo);
 }
-
-let mostrarNodosDebug = true; // Cambiar a true para ver nodos durante desarrollo
-let mostrarNombresCalles = true; // Para mostrar nombres de calles
-let mostrarIdsNodos = true; // Para mostrar u ocultar IDs de nodos
 
 function dibujarCallesDesdeJSON() {
     // Eliminar las calles anteriores
@@ -718,6 +719,7 @@ function calcularVelocidadBase(nivel) {
 }
 
 // ----- Operaciones basicas -----
+//Iniciar simulacion
 function playSim() {
   if (!running) {
     running = true;
@@ -726,11 +728,13 @@ function playSim() {
   }
 }
 
+//Detener simulacion
 function stopSim() {
   running = false;
   cancelAnimationFrame(animationId); //Detiene simulacion
 }
 
+//Recargar simulacion
 function reloadSim() {
   stopSim();
   cars.forEach((car, i) => {
@@ -841,29 +845,6 @@ function cambiarRutaAuto(car) {
   console.log("Ruta cambiada a:", rutaNodos);
 }
 
-// -----Procesamiento de prompteo-----
-async function enviarPrompt() {
-  const inputValue = document.getElementById("instruction-input").value.trim();
-  if (!inputValue) return console.warn("No hay instrucción para enviar.");
-
-  try {
-    const response = await fetch("http://localhost:8000/nlp", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prompt: inputValue, max_tokens: 150 }),
-    });
-    const data = await response.json();
-    console.log("Respuesta backend NLP:", data);
-
-    const accion = data.status?.toLowerCase() || "";
-    if (accion.includes("start")) playSim();
-    else if (accion.includes("stop")) stopSim();
-    else if (accion.includes("reload")) reloadSim();
-  } catch (error) {
-    console.error("Error al enviar prompt:", error);
-  }
-}
-
 // ----- Inicializacion -----
 async function init() {
   //Cargar datos
@@ -962,6 +943,7 @@ window.addEventListener("DOMContentLoaded", () => {
   });
 });
 
+// ----- Vistas de camara -----
 function updateCamera() {
   switch (currentView) {
     case "top": // Vista cenital con zoom y movimiento
@@ -1000,6 +982,30 @@ function siguienteAuto() {
     console.log("Siguiendo auto:", followIndex);
   }
 }
+
+// -----Procesamiento de prompteo-----
+async function enviarPrompt() {
+  const inputValue = document.getElementById("instruction-input").value.trim();
+  if (!inputValue) return console.warn("No hay instrucción para enviar.");
+
+  try {
+    const response = await fetch("http://localhost:8000/nlp", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt: inputValue, max_tokens: 150 }),
+    });
+    const data = await response.json();
+    console.log("Respuesta backend NLP:", data);
+
+    const accion = data.status?.toLowerCase() || "";
+    if (accion.includes("start")) playSim();
+    else if (accion.includes("stop")) stopSim();
+    else if (accion.includes("reload")) reloadSim();
+  } catch (error) {
+    console.error("Error al enviar prompt:", error);
+  }
+}
+
 // ----- Eventos -----
 document.getElementById("play-button").addEventListener("click", () => {
   fetch("http://localhost:8000/start")
@@ -1083,8 +1089,8 @@ document.getElementById("mapaCanvas").addEventListener("click", (event) => {
   }
 });
 
-//document.getElementById("button-main").addEventListener("click", enviarPrompt);
-document.getElementById("send-button").addEventListener("click", enviarPrompt);
+document.getElementById("button-main").addEventListener("click", enviarPrompt); //index2.html
+document.getElementById("send-button").addEventListener("click", enviarPrompt); //index.html
 
 // ----- Conexion websocket -----
 async function sincronizarEstado() {
@@ -1167,7 +1173,7 @@ socket.onmessage = ({ data }) => {
 
 // Ajustar cantidad de autos
 function ajustarCantidadAutos(cantidad) {
-  console.log("⏫ Ajustando cantidad de autos a:", cantidad);
+  console.log("Ajustando cantidad de autos a:", cantidad);
 
   cars.forEach((car) => scene.remove(car));
   cars.length = 0;
