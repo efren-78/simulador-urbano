@@ -16,6 +16,11 @@ Con NeuroOctopus puedes controlar:
   3. Responder preguntas sobre eventos, condiciones climáticas, semáforos.
   
 ---
+## 🧠 Inicio del Simulador y Chatbot
+El simulador NeuroOctopus inicia en el índice 2 (index2), donde puedes:
+- 🚗 **Definir el número de autos** que aparecerán al comenzar.
+- 🌐 **Establecer la condición inicial del tráfico**, como velocidad o densidad.
+- 💬 **Interactuar con el chatbot**, que te guía en el simulador, explica comandos disponibles y responde preguntas sobre el entorno simulado. 
 
 ## Requisitos
 ### 🔧 Python
