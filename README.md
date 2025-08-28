@@ -7,6 +7,10 @@ Con NeuroOctopus puedes controlar:
 - 🚦 **Semáforos:** cambiar estados de luces, modificar ciclos y tiempos.  
 - 🛑 **Bloqueos:** activar o eliminar bloqueos en calles específicas.  
 - 🌐 **Tráfico:** ajustar el flujo, velocidad y densidad del tráfico en tiempo real.  
+- 🚨 **Accidentes:** simular colisiones vehiculares y gestionar sus consecuencias.
+- 🌧️ **Condiciones Climáticas:** modificar el clima (lluvia, noche, niebla, soleado.).
+- 👁️ **Vista y Perspectiva:** cambiar ángulos de cámara, vistas aéreas y perspectivas de visualización.
+
 
 ---
 
