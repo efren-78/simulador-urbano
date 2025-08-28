@@ -1,5 +1,6 @@
 # 🏙️  NeuroOctopus: Simulador Urbano con SUMO
 NeuroOctopus es un proyecto de simulación de tráfico urbano a pequeña escala, controlado mediante comandos en lenguaje natural. Utiliza un modelo de lenguaje de OpenAI para generar eventos dinámicos que afectan la circulación en tiempo real.
+##
 
 
 
