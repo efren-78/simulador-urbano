@@ -1,0 +1,108 @@
+from openai import OpenAI
+from dotenv import load_dotenv
+import os, json, re, logging
+
+# Configurar logs
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [LLM] %(message)s")
+
+# Cargar variables del .env
+load_dotenv()
+
+# Inicializa cliente OpenAI
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+#Genera respuesta NLP para la simulación de tráfico.   
+# Devuelve SIEMPRE un diccionario con:
+# {"accion": str, 
+# "numCars": int, 
+# "trafico": str, 
+# "semaforo": str | None}
+
+def generar_respuesta(prompt: str, max_tokens: int = 150) -> dict:
+    # Valores por defecto
+    respuesta_fallback = {
+        "accion": "none",
+        "numCars": 10,
+        "trafico": "moderado",
+        "semaforo": None,
+        "calle": None
+    }
+
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o",
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "Eres un asistente para un simulador de tráfico urbano. "
+                        "Tu única tarea es interpretar instrucciones del usuario "
+                        "y devolver SIEMPRE un JSON puro y válido. "
+                        "El JSON debe incluir: "
+                        "\"accion\" (uno de: \"start\", \"stop\", \"reload\", \"ajustar\", "
+                        "\"bloquear\", \"desbloquear\", \"none\"), "
+                        "\"numCars\" (entero), "
+                        "\"trafico\" (\"alto\", \"moderado\" o \"bajo\"), "
+                        "opcionalmente \"semaforo\" (\"verde\", \"rojo\", \"amarillo\"), "
+                        "y opcionalmente \"calle\" (nombre de la calle si corresponde). "
+
+                        "No devuelvas bloques de código (```), "
+                        "ni texto adicional, solo JSON válido."
+                    )
+                },
+                {"role": "user", "content": prompt}
+            ],
+            max_tokens=max_tokens,
+            temperature=0.1,
+            timeout=10
+        )
+
+        raw_content = response.choices[0].message.content.strip()
+        logging.info(f"Respuesta cruda del LLM: {raw_content}")
+
+        # 🔧 Limpia si vino envuelto en ```json ... ```
+        if raw_content.startswith("```"):
+            raw_content = re.sub(r"^```[a-zA-Z]*\n?", "", raw_content)  # abre
+            raw_content = re.sub(r"```$", "", raw_content)              # cierra
+            raw_content = raw_content.strip()
+
+        # Intenta convertir a JSON
+        try:
+            params = json.loads(raw_content)
+        except json.JSONDecodeError:
+            logging.error(f"Error al decodificar JSON: {raw_content}")
+            return respuesta_fallback
+
+        # Validación básica
+        accion = str(params.get("accion", "none")).lower()
+        if accion not in ["start", "stop", "reload", "ajustar", "bloquear", "desbloquear", "none"]:
+            accion = "none"
+
+        try:
+            numCars = int(params.get("numCars", 10))
+        except ValueError:
+            numCars = 10
+
+        trafico = params.get("trafico", "moderado").lower()
+        if trafico not in ["alto", "moderado", "bajo"]:
+            trafico = "moderado"
+
+        semaforo = params.get("semaforo", None)
+        if semaforo:
+            semaforo = semaforo.lower()
+            if semaforo not in ["verde", "amarillo", "rojo"]:
+                semaforo = None
+
+        calle = params.get("calle", None)
+
+        return {
+            "accion": accion,
+            "numCars": numCars,
+            "trafico": trafico,
+            "semaforo": semaforo,
+            "calle": calle
+        }
+
+    except Exception as e:
+        logging.error(f"Error al llamar al LLM: {e}")
+        return respuesta_fallback
