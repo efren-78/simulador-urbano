@@ -11,6 +11,8 @@ load_dotenv()
 # Inicializa cliente OpenAI
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
+
+# Devuelve un diccionario
 def generar_respuesta(prompt: str, max_tokens: int = 150) -> dict:
     # Valores por defecto
     respuesta_fallback = {
@@ -24,7 +26,10 @@ def generar_respuesta(prompt: str, max_tokens: int = 150) -> dict:
         "ubicacion_accidente": None,
         "tipo_clima": None,
         "intensidad_clima": None,
-        "duracion_clima": None
+        "duracion_clima": None,
+        "tipo_vista": None,
+        "auto_id": None,
+        "ubicacion_vista": None
     }
 
     try:
@@ -49,7 +54,10 @@ def generar_respuesta(prompt: str, max_tokens: int = 150) -> dict:
                         "opcionalmente \"ubicacion_accidente\" (string), "
                         "opcionalmente \"tipo_clima\" (\"soleado\", \"lluvia\", \"niebla\", \"noche\"), " 
                         "opcionalmente \"intensidad_clima\" (\"leve\", \"moderado\", \"fuerte\"), " 
-                        "opcionalmente \"duracion_clima\" (entero, minutos). "  
+                        "opcionalmente \"duracion_clima\" (entero, minutos), "
+                        "opcionalmente \"tipo_vista\" (\"cenital\", \"aerea\", \"siguiendo\", \"primera_persona\", \"dron\", \"conductor\"), "
+                        "opcionalmente \"auto_id\" (entero, numero del auto a seguir), "
+                        "opcionalmente \"ubicacion_vista\" (string). "
 
                         "EJEMPLOS:\n"
                         "\"Simula accidente leve en Avenida Principal por 10 minutos\" → "
@@ -58,6 +66,10 @@ def generar_respuesta(prompt: str, max_tokens: int = 150) -> dict:
                         "{\"accion\": \"clima\", \"tipo_clima\": \"lluvia\", \"intensidad_clima\": \"moderado\", \"duracion_clima\": 20}\n"
                         "\"Niebla densa\" → "
                         "{\"accion\": \"clima\", \"tipo_clima\": \"niebla\", \"intensidad_clima\": \"fuerte\", \"duracion_clima\": 30}\n"
+                        "\"vista aérea\" → \n"
+                        "{\"accion\": \"vista\", \"tipo_vista\": \"aerea\"}\n"
+                        "\"sigue al auto 3\" → \n"
+                        "{\"accion\": \"vista\", \"tipo_vista\": \"siguiendo\", \"auto_id\": 3}\n"
 
                         "No devuelvas bloques de código (```), "
                         "ni texto adicional, solo JSON válido."
@@ -89,10 +101,9 @@ def generar_respuesta(prompt: str, max_tokens: int = 150) -> dict:
 
         # Validación básica
         accion = str(params.get("accion", "none")).lower()
-        if accion not in ["start", "stop", "reload", "ajustar", "bloquear", "desbloquear", "accidente", "clima", "none"]:  # ✅ Añadir "clima"
+        if accion not in ["start", "stop", "reload", "ajustar", "bloquear", "desbloquear", "accidente", "clima", "vista", "none"]:  # ✅ Añadir "clima"
             accion = "none"
 
-        # ✅ PRIMERO accidentes
         if accion == "accidente":
             tipo = params.get("tipo_accidente", "leve")
             if tipo not in ["leve", "moderado", "grave"]:
@@ -117,10 +128,13 @@ def generar_respuesta(prompt: str, max_tokens: int = 150) -> dict:
                 "ubicacion_accidente": ubicacion,
                 "tipo_clima": None,          
                 "intensidad_clima": None,  
-                "duracion_clima": None      
+                "duracion_clima": None,
+                "tipo_vista": None,
+                "auto_id": None,
+                "ubicacion_vista": None     
             }
 
-        # ✅ LUEGO clima
+
         if accion == "clima":
             tipo = params.get("tipo_clima", "soleado")
             if tipo not in ["soleado", "lluvia", "niebla", "noche"]:
@@ -147,10 +161,44 @@ def generar_respuesta(prompt: str, max_tokens: int = 150) -> dict:
                 "ubicacion_accidente": None,  
                 "tipo_clima": tipo,
                 "intensidad_clima": intensidad,
-                "duracion_clima": duracion
+                "duracion_clima": duracion,
+                "tipo_vista": None,
+                "auto_id": None,
+                "ubicacion_vista": None
             }
 
-        # ✅ FINALMENTE otros comandos
+        if accion == "vista":
+            tipo = params.get("tipo_vista", "cenital")
+            if tipo not in ["cenital", "aerea", "siguiendo", "primera_persona", "dron", "conductor"]:
+                tipo = "cenital"
+            
+            auto_id = params.get("auto_id")
+            if auto_id is not None:
+                try:
+                    auto_id = int(auto_id)
+                except (ValueError, TypeError):
+                    auto_id = None
+            
+            ubicacion = params.get("ubicacion_vista", "")
+            
+            return {
+                "accion": "vista",
+                "numCars": 10,
+                "trafico": "moderado",
+                "semaforo": None,
+                "calle": None,
+                "tipo_accidente": None,    
+                "duracion_accidente": None,  
+                "ubicacion_accidente": None,  
+                "tipo_clima": None,
+                "intensidad_clima": None,
+                "duracion_clima": None,
+                "tipo_vista": tipo,
+                "auto_id": auto_id,
+                "ubicacion_vista": ubicacion
+            }
+
+        # Comandos predeterminados
         try:
             numCars = int(params.get("numCars", 10))
         except ValueError:
@@ -179,7 +227,10 @@ def generar_respuesta(prompt: str, max_tokens: int = 150) -> dict:
             "ubicacion_accidente": None,
             "tipo_clima": None,        
             "intensidad_clima": None,   
-            "duracion_clima": None       
+            "duracion_clima": None,
+            "tipo_vista": None,
+            "auto_id": None,
+            "ubicacion_vista": None       
         }
 
     except Exception as e:

@@ -22,12 +22,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-#modelo para configurar la simulación (no. de autos y nivel de tráfico) 
+# Modelo para configurar la simulación (no. de autos y nivel de tráfico) 
 class Configuracion(BaseModel):
     numCars: int
     trafico: str
 
-# endpoint para configurar la simulación manualmente 
+# Endpoint para configurar la simulación manualmente 
 @app.post("/configurar")
 def configurar_simulacion(config: Configuracion):
     sim.set_config(config.numCars, config.trafico)
@@ -86,16 +86,13 @@ async def cambiar_semaforo(estado: str):
 def obtener_estado():
     return {"estado": estado_semaforo}
 
-#------NLP------
-
+#------ NLP ------
 #Modelo para recibir un prompt
 class PromptRequest(BaseModel):
     prompt: str              #instruccion 
     max_tokens: int = 150    #limite de tokens 
 
 #Endpoint que interpreta las instrucciones en lenguaje natural 
-
-# ------NLP------
 @app.post("/nlp")
 async def responder(req: PromptRequest):
     params = generar_respuesta(req.prompt, req.max_tokens)
@@ -103,14 +100,21 @@ async def responder(req: PromptRequest):
     if "error" in params:
         raise HTTPException(status_code=422, detail=params["content"])
 
+    # Extraer los parametros para inicializar
     accion = params.get("accion", "none")
     numCars = params.get("numCars", 10)
     trafico = params.get("trafico", "moderado")
     semaforo = params.get("semaforo", None)
     calle = params.get("calle", None)
-    tipo_accidente = params.get("tipo_accidente", "leve")  # ✅ Añadir estas líneas
+    tipo_accidente = params.get("tipo_accidente", "leve") 
     duracion_accidente = params.get("duracion_accidente", 15)
     ubicacion_accidente = params.get("ubicacion_accidente", "")
+    tipo_clima = params.get("tipo_clima", "soleado")          
+    intensidad_clima = params.get("intensidad_clima", "leve")  
+    duracion_clima = params.get("duracion_clima", 30)      
+    tipo_vista = params.get("tipo_vista")
+    auto_id = params.get("auto_id")
+    ubicacion_vista = params.get("ubicacion_vista", "")
 
     # Actualiza configuración general
     sim.set_config(numCars, trafico)
@@ -142,7 +146,7 @@ async def responder(req: PromptRequest):
         })
         logging.info(f"Semáforo cambiado a: {estado_semaforo}")
 
-    # Manejo de bloqueos
+    # Manejo de bloqueo-desbloqueo
     if accion == "bloquear" and calle:
         await notificar_todos({
             "accion": "bloquear",
@@ -158,7 +162,8 @@ async def responder(req: PromptRequest):
         })
         logging.info(f"Bloqueo eliminado en calle: {calle}")
         return {"status": f"Calle '{calle}' desbloqueada", "calle": calle}
-
+    
+    # Manejo de accidentes
     elif accion == "accidente":
         await notificar_todos({
             "accion": "accidente",
@@ -176,6 +181,8 @@ async def responder(req: PromptRequest):
             "ubicacion": ubicacion_accidente
         }
 
+    # Manejo de climas:
+    # Soleado, neblina, lluvioso, nocturno
     elif accion == "clima":
         tipo = params.get("tipo_clima", "soleado")
         intensidad = params.get("intensidad_clima", "leve")
@@ -199,6 +206,22 @@ async def responder(req: PromptRequest):
             "duracion_clima": duracion
         }
 
+    # Manejo de vistas
+    elif accion == "vista":
+        await notificar_todos({
+            "accion": "vista",
+            "tipo": tipo_vista,
+            "auto_id": auto_id,
+            "ubicacion": ubicacion_vista
+        })
+        
+        return {
+            "status": f"Vista cambiada a: {tipo_vista}",
+            "tipo_vista": tipo_vista,
+            "auto_id": auto_id,
+            "ubicacion_vista": ubicacion_vista
+        }
+
     # Respuesta final
     return {
         "status": f"Acción '{accion}' ejecutada",
@@ -208,6 +231,7 @@ async def responder(req: PromptRequest):
         "calle": calle
     }
 
+# Quita accidente puesto
 async def limpiar_accidente_automatico(duracion_minutos: int, ubicacion: str):
     await asyncio.sleep(duracion_minutos * 60)  # Convertir a segundos
     await notificar_todos({
@@ -215,7 +239,7 @@ async def limpiar_accidente_automatico(duracion_minutos: int, ubicacion: str):
         "ubicacion": ubicacion
     })
 
-
+# Limpia clima puesto
 async def restaurar_clima_automatico(duracion_minutos: int):
     await asyncio.sleep(duracion_minutos * 60)
     await notificar_todos({
@@ -224,7 +248,7 @@ async def restaurar_clima_automatico(duracion_minutos: int):
         "intensidad": "leve",
         "duracion": 0
     })
-    
+
 #-----Conexion Websocket-----
 
 #Endpoint que realiza la conexion

@@ -78,6 +78,18 @@ const efectosClima = {
 let sistemaParticulasLluvia = null;
 let sistemaParticulasNiebla = null;
 
+let vistasConfig = {
+    cenital: { position: new THREE.Vector3(0, 150, 100), lookAt: new THREE.Vector3(0, 0, 0) },
+    aerea: { position: new THREE.Vector3(50, 200, 150), lookAt: new THREE.Vector3(50, 0, 50) },
+    dron: { position: new THREE.Vector3(0, 100, 50), lookAt: new THREE.Vector3(0, 0, 0) },
+    siguiendo: { offset: new THREE.Vector3(-10, 5, 5) },
+    primera_persona: { offset: new THREE.Vector3(0, 2, 0) },
+    conductor: { offset: new THREE.Vector3(0, 1.5, 0.5) }
+};
+
+let autoSeguimiento = null;
+let vistaActual = "cenital";
+
 // ----- CARGA DE RECURSOS -----
 //Intersecciones
 async function cargarNodos() {
@@ -1035,31 +1047,62 @@ window.addEventListener("DOMContentLoaded", () => {
 });
 
 function updateCamera() {
-  switch (currentView) {
-    case "top": // Vista cenital con zoom y movimiento
-      camera.position.set(camX, zoomLevel, camZ);
-      camera.lookAt(camX, 0, camZ - 100);
-      break;
+    switch(vistaActual) {
+        case "siguiendo":
+        case "primera_persona":
+        case "conductor":
+            if (autoSeguimiento) {
+                actualizarVistaSiguienteAuto();
+            }
+            break;
+        default:
+            // Las vistas estáticas se mantienen
+            break;
+    }
+}
 
-    case "street": // Vista nivel calle
-      camera.position.set(-30, 5, 30);
-      camera.lookAt(0, 0, 0);
-      break;
-
-    case "follow": // Seguir auto
-      if (cars && cars.length > 0) {
-        if (!followCar) followCar = cars[0];
-        const carPos = followCar.position;
-        camera.position.set(carPos.x - 10, 8, carPos.z + 5);
-        camera.lookAt(carPos.x, carPos.y, carPos.z);
-      }
-      break;
-
-    case "dron": // Vista aérea inclinada
-      camera.position.set(50, 130, 140);
-      camera.lookAt(50, 30, 50);
-      break;
-  }
+function actualizarVistaSiguienteAuto() {
+    if (!autoSeguimiento) return;
+    
+    const carPos = autoSeguimiento.position;
+    const carRotation = autoSeguimiento.rotation;
+    
+    switch(vistaActual) {
+        case "siguiendo":
+            camera.position.set(
+                carPos.x + vistasConfig.siguiendo.offset.x,
+                carPos.y + vistasConfig.siguiendo.offset.y,
+                carPos.z + vistasConfig.siguiendo.offset.z
+            );
+            camera.lookAt(carPos.x, carPos.y, carPos.z);
+            break;
+            
+        case "primera_persona":
+            // Vista desde el frente del auto
+            const offsetX = Math.sin(carRotation.y) * 2;
+            const offsetZ = Math.cos(carRotation.y) * 2;
+            camera.position.set(
+                carPos.x - offsetX,
+                carPos.y + 1.8,
+                carPos.z - offsetZ
+            );
+            camera.lookAt(
+                carPos.x - Math.sin(carRotation.y) * 5,
+                carPos.y,
+                carPos.z - Math.cos(carRotation.y) * 5
+            );
+            break;
+            
+        case "conductor":
+            // Vista desde el asiento del conductor
+            camera.position.set(
+                carPos.x,
+                carPos.y + 1.5,
+                carPos.z + 0.5
+            );
+            camera.rotation.y = carRotation.y;
+            break;
+    }
 }
 
 // Para cambiar manualmente el auto que seguimos
@@ -1259,6 +1302,9 @@ socket.onmessage = ({ data }) => {
   }
   else if (msg.accion === "clima") {
       cambiarClima(msg.tipo, msg.intensidad, msg.duracion);
+  }
+  else if (msg.accion === "vista") {
+      cambiarVista(msg.tipo, msg.auto_id, msg.ubicacion);
   }
 };
 
@@ -1671,4 +1717,142 @@ function activarIluminacionNocturna() {
 
 function desactivarIluminacionNocturna() {
     // Restaurar valores normales
+}
+
+// ----- VISTAS -----
+function cambiarVista(tipo, autoId, ubicacion) {
+    vistaActual = tipo;
+    
+    switch(tipo) {
+        case "cenital":
+            setVistaCenital();
+            break;
+        case "aerea":
+            setVistaAerea(ubicacion);
+            break;
+        case "dron":
+            setVistaDron();
+            break;
+        case "siguiendo":
+            setVistaSiguiendo(autoId);
+            break;
+        case "primera_persona":
+            setVistaPrimeraPersona(autoId);
+            break;
+        case "conductor":
+            setVistaConductor(autoId);
+            break;
+        default:
+            setVistaCenital();
+    }
+    
+    mostrarNotificacion(`Vista cambiada a: ${tipo}${autoId ? ' auto ' + autoId : ''}`);
+}
+
+function setVistaCenital() {
+    camera.position.set(0, 150, 100);
+    camera.lookAt(0, 0, 0);
+    autoSeguimiento = null;
+}
+
+function setVistaAerea(ubicacion) {
+    camera.position.set(50, 200, 150);
+    camera.lookAt(50, 0, 50);
+    autoSeguimiento = null;
+    
+    // Si se especifica ubicación, buscar y apuntar allí
+    if (ubicacion) {
+        const coords = buscarUbicacionEnGrafo(ubicacion);
+        if (coords) {
+            camera.position.set(coords.x + 50, 150, coords.y + 50);
+            camera.lookAt(coords.x, 0, coords.y);
+        }
+    }
+}
+
+function setVistaDron() {
+    camera.position.set(0, 100, 50);
+    camera.lookAt(0, 0, 0);
+    autoSeguimiento = null;
+}
+
+function setVistaSiguiendo(autoId) {
+    const auto = obtenerAutoPorId(autoId);
+    if (auto) {
+        autoSeguimiento = auto;
+    } else {
+        mostrarNotificacion("Auto no encontrado, usando vista cenital");
+        setVistaCenital();
+    }
+}
+
+function setVistaPrimeraPersona(autoId) {
+    const auto = obtenerAutoPorId(autoId);
+    if (auto) {
+        autoSeguimiento = auto;
+        // Posición más cercana para vista FPV
+    } else {
+        mostrarNotificacion("Auto no encontrado, usando vista siguiendo");
+        setVistaSiguiendo(0); // Primer auto
+    }
+}
+
+function setVistaConductor(autoId) {
+    const auto = obtenerAutoPorId(autoId);
+    if (auto) {
+        autoSeguimiento = auto;
+        // Vista desde el asiento del conductor
+    } else {
+        setVistaPrimeraPersona(0); // Primer auto
+    }
+}
+
+function obtenerAutoPorId(id) {
+    if (id !== null && id !== undefined && cars.length > 0) {
+        const index = Math.min(Math.max(0, id), cars.length - 1);
+        return cars[index];
+    }
+    return cars[0]; // Primer auto por defecto
+}
+
+// Función para ciclo entre vistas
+function siguienteVista() {
+    const vistas = ["cenital", "aerea", "dron", "siguiendo", "primera_persona", "conductor"];
+    const currentIndex = vistas.indexOf(vistaActual);
+    const nextIndex = (currentIndex + 1) % vistas.length;
+    cambiarVista(vistas[nextIndex], 0, "");
+}
+
+// Función para seguir el siguiente auto
+function siguienteAuto() {
+    if (vistaActual === "siguiendo" || vistaActual === "primera_persona" || vistaActual === "conductor") {
+        const currentIndex = cars.indexOf(autoSeguimiento);
+        const nextIndex = (currentIndex + 1) % cars.length;
+        cambiarVista(vistaActual, nextIndex, "");
+    }
+}
+
+// Transiciones suaves entre vistas
+function transicionSuaveVista(nuevaPosicion, nuevoLookAt, duracion = 2000) {
+    const posInicial = camera.position.clone();
+    const lookInicial = camera.getWorldDirection(new THREE.Vector3());
+    
+    const startTime = Date.now();
+    
+    function animarTransicion() {
+        const elapsed = Date.now() - startTime;
+        const progress = Math.min(elapsed / duracion, 1);
+        
+        // Interpolación suave
+        camera.position.lerpVectors(posInicial, nuevaPosicion, progress);
+        
+        const currentLook = new THREE.Vector3().lerpVectors(lookInicial, nuevoLookAt, progress);
+        camera.lookAt(currentLook);
+        
+        if (progress < 1) {
+            requestAnimationFrame(animarTransicion);
+        }
+    }
+    
+    animarTransicion();
 }
