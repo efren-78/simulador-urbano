@@ -437,15 +437,25 @@ function encontrarRutaAlternativa(nodoOrigen, nodoDestino, callesBloqueadas = []
   return null;
 }
 
-// Eliminar el sistema de bloqueos circulares y usar solo calles bloqueadas
 function crearBloqueoEnCalle(nombreCalle) {
-  if (callesConNodos[nombreCalle]) {
+    // Convertir a formato consistente (ej: minúsculas, sin espacios extras)
+    const calleNormalizada = nombreCalle.trim().toLowerCase();
+    
+    // Verificar si la calle existe en tu sistema
+    const calleExiste = Object.keys(callesConNodos).some(
+        calle => calle.toLowerCase() === calleNormalizada
+    );
+    
+    if (!calleExiste) {
+        console.error("Calle no encontrada:", nombreCalle);
+        mostrarError(`Calle "${nombreCalle}" no existe en el sistema`);
+        return false;
+    }
+    
+    // Resto de tu implementación actual...
     callesConNodos[nombreCalle].estado = "cerrada";
     actualizarVisualCalles();
-    console.log("Calle bloqueada:", nombreCalle);
     return true;
-  }
-  return false;
 }
 
 function desbloquearCalle(nombreCalle) {
@@ -1176,9 +1186,12 @@ socket.onmessage = ({ data }) => {
   } else if (msg.accion === "reload") {
     reloadSim();
   } else if (msg.accion === "bloquear" && msg.calle) {
-    bloquearCalle(msg.calle);
-  } else if (msg.accion === "desbloquear" && msg.calle) {
-    desbloquearCalle(msg.calle);
+    crearBloqueoEnCalle(msg.calle);
+    mostrarNotificacion(`Calle ${msg.calle} bloqueada`);
+  } 
+  else if (msg.accion === "desbloquear" && msg.calle) {
+      desbloquearCalle(msg.calle);
+      mostrarNotificacion(`Calle ${msg.calle} desbloqueada`);
   }
 };
 
