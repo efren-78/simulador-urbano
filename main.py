@@ -324,3 +324,4 @@ async def notificar_todos(data: dict):
 
 # Sirve archivos estáticos HTML + JS debe ir en /static)
 app.mount("/", StaticFiles(directory="static", html=True), name="static") 
+
