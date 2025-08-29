@@ -265,6 +265,73 @@ function crearEscuela(posicion = { x: 0, z: 0 }, escala = 1) {
   scene.add(grupo);
 }
 
+//casotaaa
+
+function crearSalon(posicion = { x: 0, z: 0 }, escala = 1) {
+  const grupo = new THREE.Group();
+
+  // Paredes (rectángulo negro)
+  const paredes = new THREE.Mesh(
+    new THREE.BoxGeometry(20, 8, 12), // largo, alto, ancho
+    new THREE.MeshPhongMaterial({ color: 0x3366ff }) // negro
+  );
+  paredes.position.y = 4;
+  grupo.add(paredes);
+
+  // Bordes o franjas azules (decoración)
+  const bordeSuperior = new THREE.Mesh(
+    new THREE.BoxGeometry(20.2, 0.4, 12.2),
+    new THREE.MeshPhongMaterial({ color: 0xcc3333 }) // azul
+  );
+  bordeSuperior.position.y = 8.2;
+  grupo.add(bordeSuperior);
+
+  const bordeInferior = new THREE.Mesh(
+    new THREE.BoxGeometry(20.2, 0.4, 12.2),
+    new THREE.MeshPhongMaterial({ color: 0xcc3333 }) // azul
+  );
+  bordeInferior.position.y = 0.2;
+  grupo.add(bordeInferior);
+
+  // Puerta azul
+  const puerta = new THREE.Mesh(
+    new THREE.BoxGeometry(2, 3.5, 0.3),
+    new THREE.MeshPhongMaterial({ color: 0xffcc00 }) // azul
+  );
+  puerta.position.set(0, 1.75, 6.2);
+  grupo.add(puerta);
+
+  // Ventanas rectangulares
+  function crearVentana(x, y, z) {
+    const ventana = new THREE.Mesh(
+      new THREE.PlaneGeometry(2, 1.5),
+      new THREE.MeshBasicMaterial({
+        color: 0x3366ff,
+        transparent: true,
+        opacity: 0.7,
+      })
+    );
+    ventana.position.set(x, y, z);
+    grupo.add(ventana);
+  }
+
+  // Ventanas frontales
+  crearVentana(-5, 4, 6.1);
+  crearVentana(5, 4, 6.1);
+
+  // Ventanas traseras
+  crearVentana(-5, 4, -6.1);
+  crearVentana(5, 4, -6.1);
+
+  // Posición y escala del grupo
+  grupo.position.set(posicion.x, 0, posicion.z);
+  grupo.rotation.y = Math.PI / 2; // 90 grados
+
+  grupo.scale.set(4.5, 4.5, 4.5); // ESCALA UNIFORME
+
+  scene.add(grupo);
+}
+
 //Semaforo simple
 //Corregir posicion, falta modelado 3d
 function crearSemaforo(position, initialState = "red", offset = 0) {
@@ -1105,6 +1172,7 @@ async function init() {
   crearSemaforo({ x: 45, z: 90 }, "yellow", 7);
 
   crearEscuela({ x: -40, z: -40 });
+  crearSalon({ x: -100, z: 20 });
 
   const numCars = 5; // Lo ajusta backend después
   const trafico = "moderado";
@@ -1208,33 +1276,6 @@ document.getElementById("reload-button").addEventListener("click", () => {
   fetch("http://localhost:8000/reload")
     .then((res) => res.json())
     .then(() => reloadSim());
-});
-
-document.getElementById("add-bloqueo").addEventListener("click", () => {
-  modoAgregarBloqueo = true;
-  modoEliminarBloqueo = false;
-  console.log("Modo: agregar bloqueo");
-});
-
-document.getElementById("remove-bloqueo").addEventListener("click", () => {
-  modoEliminarBloqueo = true;
-  modoAgregarBloqueo = false;
-  console.log("Modo: eliminar bloqueo");
-});
-
-document.getElementById("clear-bloqueos").addEventListener("click", () => {
-  // Desbloquear todas las calles
-  for (const calleNombre in callesConNodos) {
-    callesConNodos[calleNombre].estado = "abierta";
-  }
-
-  // Limpiar bloqueos circulares (si decides mantenerlos)
-  bloqueos.length = 0;
-  bloqueoMeshes.forEach((mesh) => scene.remove(mesh));
-  bloqueoMeshes.length = 0;
-
-  actualizarVisualCalles();
-  console.log("Todos los bloqueos eliminados");
 });
 
 const raycaster = new THREE.Raycaster();
